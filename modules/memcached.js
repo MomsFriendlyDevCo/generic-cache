@@ -21,15 +21,15 @@ module.exports = function(settings) {
 	};
 
 	driver.set = function(key, val, expiry, cb) {
-		var expiryMS = expiry ? expiry - (new Date()) : driver.settings.memcached.lifetime;
+		var expiryS = Math.floor((expiry ? expiry - (new Date()) : driver.settings.memcached.lifetime) / 1000);
 
-		if (expiryMS <= 0) { // Actually unset the value instead
+		if (expiryS <= 0) { // Actually unset the value instead
 			driver.unset(key, ()=> cb());
 		} else {
 			driver.memcacheClient.set(
 				key,
 				val,
-				expiryMS,
+				expiryS,
 				cb
 			);
 		}

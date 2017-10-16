@@ -59,7 +59,7 @@ var expect = require('chai').expect;
 			});
 		});
 
-		it('should expire an entry immediately', done => {
+		it('should expire an entry immediately (date = now)', done => {
 			cache.set('quz', 'Quz!', new Date(), err => {
 				expect(err).to.not.be.ok;
 
@@ -69,6 +69,21 @@ var expect = require('chai').expect;
 
 					done();
 				});
+			});
+		});
+
+		it('should expire an entry within 1.5s', done => {
+			cache.set('quzz', 'Quzz!', new Date(Date.now() + 1500), err => {
+				expect(err).to.not.be.ok;
+
+				setTimeout(()=> {
+					cache.get('quzz', (err, val) => {
+						expect(err).to.be.not.ok;
+						expect(val).to.be.undefined;
+
+						done();
+					});
+				}, 1600);
 			});
 		});
 
