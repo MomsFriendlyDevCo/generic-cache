@@ -28,7 +28,11 @@ function Cache(settings, cb) {
 			.limit(1)
 			.forEach(_.castArray(cache.settings.modules), function(next, driverName) {
 				if (cache.activeModule) return next(); // Already loaded something
-				var mod = require(`${cache.modulePath}/${driverName}`)(settings);
+				try {
+					var mod = require(`${cache.modulePath}/${driverName}`)(settings);
+				} catch (e) {
+					next(e);
+				}
 
 				mod.canLoad((err, res) => {
 					if (err) return next(err);
