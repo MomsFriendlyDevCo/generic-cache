@@ -1,3 +1,6 @@
 module.exports = {
-	modules: ['memcache', 'mongodb', 'memory'],
+	modules: ['mongodb'],
+	mongodb: {
+		uri: 'mongodb://localhost/mfdc-cache',
+	},
 };

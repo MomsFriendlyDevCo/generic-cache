@@ -17,16 +17,16 @@ function Cache(settings, cb) {
 	cache.activeModule;
 	cache.activeDriver; // Computed during init()
 
-	cache.settings = {
+	cache.settings = _.defaults(settings, {
 		modules: ['memory'],
-	};
+	});
 
 	cache.init = argy('[object] [function]', function(options, cb) {
 		_.merge(cache.settings, options);
 
 		async()
 			.limit(1)
-			.forEach(cache.modules, function(next, driverName) {
+			.forEach(_.castArray(cache.settings.modules), function(next, driverName) {
 				if (cache.activeModule) return next(); // Already loaded something
 				var mod = require(`${cache.modulePath}/${driverName}`)(settings);
 
