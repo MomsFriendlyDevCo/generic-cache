@@ -34,9 +34,10 @@ module.exports = function(settings) {
 		cb();
 	};
 
-	driver.vacuume = function() {
+	driver.vacuume = function(cb) {
 		var now = new Date();
 		driver.store = _.pickBy(driver.store, (s, k) => !s.expiry || s.expiry > now);
+		cb();
 	};
 
 	return driver;

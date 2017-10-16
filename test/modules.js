@@ -1,17 +1,18 @@
 var _ = require('lodash');
 var Cache = require('..');
-var cacheConfig = require('./config');
 var expect = require('chai').expect;
 
 [
-	'memory', 'mongodb',
+	'memory',
+	'memcached',
+	'mongodb',
 ].forEach(mod => {
 
 	describe(`${mod} module`, function() {
 
 		var cache;
 		before(done => {
-			cache = new Cache(_.assign(cacheConfig, {modules: mod}), done);
+			cache = new Cache({modules: mod}, done);
 		});
 
 		it('should store simple key/vals (as single setter)', done => {

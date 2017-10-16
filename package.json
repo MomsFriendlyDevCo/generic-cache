@@ -27,6 +27,7 @@
     "mocha": "^4.0.1"
   },
   "optionalDependencies": {
+    "memcached": "^2.2.2",
     "monoxide": "0.0.92"
   }
 }

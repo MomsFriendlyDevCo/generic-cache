@@ -8,6 +8,12 @@ module.exports = function(settings) {
 
 	driver.model;
 
+	driver.settings = _.defaults(settings, {
+		mongodb: {
+			uri: 'mongodb://localhost/mfdc-cache',
+		},
+	});
+
 	driver.canLoad = function(cb) {
 		_.defaultsDeep(settings, {
 			mongodb: {
