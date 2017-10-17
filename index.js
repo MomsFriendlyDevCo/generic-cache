@@ -1,6 +1,7 @@
 var _ = require('lodash');
 var argy = require('argy');
 var async = require('async-chainable');
+var crypto = require('crypto');
 var events = require('events');
 var util = require('util');
 
@@ -30,23 +31,25 @@ function Cache(settings, cb) {
 				if (cache.activeModule) return next(); // Already loaded something
 				try {
 					var mod = require(`${cache.modulePath}/${driverName}`)(settings);
+
+					mod.canLoad((err, res) => {
+						if (err) return next(err);
+						if (res) {
+							cache.activeModule = mod;
+						}
+						next();
+					});
 				} catch (e) {
 					next(e);
 				}
-
-				mod.canLoad((err, res) => {
-					if (err) return next(err);
-					if (res) {
-						cache.activeModule = mod;
-					}
-					next();
-				});
 			})
 			.then(function(next) {
 				if (!cache.activeModule) return next('No module available to load from list: ' + cache.modules.join(', '));
 				next();
 			})
-			.end(cb);
+			// End {{{
+			.end(cb)
+			// }}}
 
 		return cache;
 	});
@@ -124,6 +127,18 @@ function Cache(settings, cb) {
 
 		return cache;
 	});
+
+
+	/**
+	* Utility function to hash complex objects
+	* @param {*} val Value to hash. If this is a complex object it will be run via JSON.stringify
+	* @returns {string} The SHA256 hash of the input
+	*/
+	cache.hash = function(val) {
+		return crypto.createHash('sha256')
+			.update(argy.isType(val, 'scalar') ? val : JSON.stringify(val))
+			.digest('hex')
+	};
 
 	cache.init(settings, cb || _.noop);
 
