@@ -72,8 +72,10 @@ function Cache(settings, cb) {
 					cache.activeModule.set(key, val, expiry, next);
 				})
 				.end(function(err) {
-					if (err) return cb(err);
-					cb(null, key);
+					if (argy.isType(cb, 'function')) {
+						if (err) return cb(err);
+						cb(null, key);
+					}
 				})
 		} else {
 			cache.activeModule.set(key, val, expiry, cb || _.noop);
