@@ -18,7 +18,7 @@ var mlog = require('mocha-logger');
 				.on('noMods', ()=> {
 					mlog.log('Module unavailable');
 					this.skip();
-				});
+				})
 		});
 
 		it('should store simple key/vals (as single setter)', done => {

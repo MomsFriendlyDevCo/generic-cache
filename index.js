@@ -54,6 +54,7 @@ function Cache(options, cb) {
 	* @param {function} cb Callback function to call when finsihed. Called as (err)
 	* @returns {Cache} This chainable object
 	* @emits noMods Emitted when no modules are available to load and we cannot continue - an error is also raised via the callback
+	* @emits cantLoad Emitted as (mod) when a named module cannot be loaded
 	*/
 	cache.init = argy('[function]', function(cb) {
 		async()
@@ -66,11 +67,13 @@ function Cache(options, cb) {
 
 					mod.canLoad((err, res) => {
 						if (err) {
+							cache.emit('cantLoad', driverName);
 							next(); // Disguard error and try next
 						} else if (res) { // Response is truthy - accept module load
 							cache.activeModule = mod;
 							next();
 						} else { // No response - try next
+							cache.emit('cantLoad', driverName);
 							next();
 						}
 					});
