@@ -1,6 +1,7 @@
 var _ = require('lodash');
 var Cache = require('..');
 var expect = require('chai').expect;
+var mlog = require('mocha-logger');
 
 [
 	'memory',
@@ -11,8 +12,13 @@ var expect = require('chai').expect;
 	describe(`${mod} module`, function() {
 
 		var cache;
-		before(done => {
-			cache = new Cache({modules: mod}, done);
+		before(function(done) {
+			this.timeout(5000);
+			cache = new Cache({modules: mod}, done)
+				.on('noMods', ()=> {
+					mlog.log('Module unavailable');
+					this.skip();
+				});
 		});
 
 		it('should store simple key/vals (as single setter)', done => {
