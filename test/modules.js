@@ -78,8 +78,8 @@ var mlog = require('mocha-logger');
 			});
 		});
 
-		it('should expire an entry within 1.5s', done => {
-			cache.set('quzz', 'Quzz!', new Date(Date.now() + 1500), err => {
+		it('should expire an entry with 100ms', done => {
+			cache.set('quzz', 'Quzz!', new Date(Date.now() + 100), err => {
 				expect(err).to.not.be.ok;
 
 				setTimeout(()=> {
@@ -89,9 +89,25 @@ var mlog = require('mocha-logger');
 
 						done();
 					});
+				}, 101);
+			});
+		});
+
+		it('should expire an entry within 1.5s', done => {
+			cache.set('flarp', 'Flarp!', new Date(Date.now() + 1500), err => {
+				expect(err).to.not.be.ok;
+
+				setTimeout(()=> {
+					cache.get('flarp', (err, val) => {
+						expect(err).to.be.not.ok;
+						expect(val).to.be.undefined;
+
+						done();
+					});
 				}, 1600);
 			});
 		});
+
 
 	});
 
