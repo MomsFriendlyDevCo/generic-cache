@@ -10,14 +10,18 @@ module.exports = function(settings) {
 		memcached: {
 			server: '127.0.0.1:11211',
 			lifetime: 1000 * 60, // Default expiry if unspecified - 1 Hour
-			options: {},
+			options: {
+				retries: 1,
+				timeout: 250,
+			},
 		},
 	});
 
 	driver.canLoad = function(cb) {
 		driver.memcacheClient = new memcached(settings.memcached.server, settings.memcached.options);
 
-		cb(null, true);
+		// Make a dummy get request and see if it fails
+		driver.memcacheClient.get('idontcare', err => cb(err, !err));
 	};
 
 	driver.set = function(key, val, expiry, cb) {
