@@ -108,7 +108,7 @@ function Cache(options, cb) {
 	* @param {function} [cb] The callback to fire when the value was stored. Called as (err, val)
 	* @returns {Object} This chainable cache module
 	*/
-	cache.set = argy('object|scalar [scalar] [date] [function]', function(key, val, expiry, cb) {
+	cache.set = argy('object|scalar [object|scalar] [date] [function]', function(key, val, expiry, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		if (argy.isType(key, 'object')) {
