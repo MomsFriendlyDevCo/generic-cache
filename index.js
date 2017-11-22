@@ -7,10 +7,11 @@ var util = require('util');
 
 /**
 * Constructor for a cache object
-* @param {Object} settings Settings to use when loading the cache
+* @param {Object} options Settings to use when loading the cache
 * @param {function} cb Callback when the module has loaded
+* @returns {Cache} A cache object constructor
 */
-function Cache(settings, cb) {
+function Cache(options, cb) {
 	var cache = this;
 	cache.modules = ['memory']; // Shorthand method that drivers should load - these should exist in modules/
 
@@ -18,35 +19,76 @@ function Cache(settings, cb) {
 	cache.activeModule;
 	cache.activeDriver; // Computed during init()
 
-	cache.settings = _.defaults(settings, {
+	cache.settings = {
+		init: true, // automatically run cache.init() when constructing
 		modules: ['memory'],
+	};
+
+
+	/**
+	* Merge the specified setting or object of settings into cache.settings
+	* @param {string|array|Object} key Either the single (dotted notation allowed) path to set, an array of path segments or the entire object to be merged
+	* @param {*} [val] If key is a single string this is the value to set
+	* @returns {Cache} This chainable object
+	*/
+	cache.options = argy('string|array|Object [*]', function(key, val) {
+		if (argy.isType(key, 'object')) {
+			_.merge(cache.settings, key);
+		} else {
+			_.set(cache.settings, key, val);
+		}
+		return cache;
 	});
 
-	cache.init = argy('[object] [function]', function(options, cb) {
-		_.merge(cache.settings, options);
 
+	/**
+	* Alias for options()
+	* @alias options()
+	*/
+	cache.option = cache.options;
+
+
+	/**
+	* Boot the cache object (automaticaly called if cache.settings.init
+	* @param {Object} [options] Options to load when booting - this is merged with cache.settings before boot
+	* @param {function} cb Callback function to call when finsihed. Called as (err)
+	* @returns {Cache} This chainable object
+	* @emits noMods Emitted when no modules are available to load and we cannot continue - an error is also raised via the callback
+	*/
+	cache.init = argy('[function]', function(cb) {
 		async()
 			.limit(1)
+			// Try all selected modules in sequence until one says it can load {{{
 			.forEach(_.castArray(cache.settings.modules), function(next, driverName) {
 				if (cache.activeModule) return next(); // Already loaded something
 				try {
-					var mod = require(`${cache.modulePath}/${driverName}`)(settings);
+					var mod = require(`${cache.modulePath}/${driverName}`)(cache.settings);
 
 					mod.canLoad((err, res) => {
-						if (err) return next(err);
-						if (res) {
+						if (err) {
+							next(); // Disguard error and try next
+						} else if (res) { // Response is truthy - accept module load
 							cache.activeModule = mod;
+							next();
+						} else { // No response - try next
+							next();
 						}
-						next();
 					});
 				} catch (e) {
 					next(e);
 				}
 			})
+			// }}}
+			// Set the active mod or deal with errors {{{
 			.then(function(next) {
-				if (!cache.activeModule) return next('No module available to load from list: ' + cache.modules.join(', '));
-				next();
+				if (!cache.activeModule) {
+					cache.emit('noMods');
+					return next('No module available to load from list: ' + cache.modules.join(', '));
+				} else {
+					next();
+				}
 			})
+			// }}}
 			// End {{{
 			.end(cb)
 			// }}}
@@ -142,7 +184,14 @@ function Cache(settings, cb) {
 			.digest('hex')
 	};
 
-	cache.init(settings, cb || _.noop);
+	cache.options(options);
+
+	// Init automatically if cache.settings.init
+	if (cache.settings.init) {
+		cache.init(cb);
+	} else if (argy.isType(cb, 'function')) {
+		cb();
+	}
 
 	return cache;
 }
