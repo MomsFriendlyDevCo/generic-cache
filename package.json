@@ -1,6 +1,6 @@
 {
   "name": "@momsfriendlydevco/cache",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Generic caching module (MemcacheD, Mongo, in-memory)",
   "main": "index.js",
   "directories": {

@@ -62,6 +62,7 @@ Set a collection of keys or a single key with the optional expiry.
 cache.get(key, [fallback], callback)
 ------------------------------------
 Fetch a single value and call the callback. If the value does not exist the fallback value will be provided.
+Callback is called as `(err, value)`.
 
 
 cache.vacuume([callback])

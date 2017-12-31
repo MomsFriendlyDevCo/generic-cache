@@ -53,6 +53,7 @@ function Cache(options, cb) {
 	* @param {Object} [options] Options to load when booting - this is merged with cache.settings before boot
 	* @param {function} cb Callback function to call when finsihed. Called as (err)
 	* @returns {Cache} This chainable object
+	* @emits loadedMod Emitted when a module has been successfully loaded
 	* @emits noMods Emitted when no modules are available to load and we cannot continue - an error is also raised via the callback
 	* @emits cantLoad Emitted as (mod) when a named module cannot be loaded
 	*/
@@ -70,6 +71,7 @@ function Cache(options, cb) {
 							cache.emit('cantLoad', driverName);
 							next(); // Disguard error and try next
 						} else if (res) { // Response is truthy - accept module load
+							cache.emit('loadedMod', driverName);
 							cache.activeModule = mod;
 							next();
 						} else { // No response - try next
