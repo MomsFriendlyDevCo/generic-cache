@@ -69,3 +69,14 @@ cache.vacuume([callback])
 -------------------------
 Attempt to clean up any left over or expired cache entries.
 This is only supported by some modules.
+
+
+Debugging
+=========
+This module uses the [debug NPM module](https://github.com/visionmedia/debug) for debugging. To enable set the environment variable to `DEBUG=cache`.
+
+For example:
+
+```
+DEBUG=cache node myFile.js
+```

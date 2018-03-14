@@ -11,7 +11,7 @@ var mlog = require('mocha-logger');
 
 	describe(`${mod} module`, function() {
 
-		var cache;
+		let cache;
 		before(function(done) {
 			this.timeout(5000);
 			cache = new Cache({modules: mod}, done)

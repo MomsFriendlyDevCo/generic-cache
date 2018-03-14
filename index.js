@@ -2,6 +2,7 @@ var _ = require('lodash');
 var argy = require('argy');
 var async = require('async-chainable');
 var crypto = require('crypto');
+var debug = require('debug')('cache');
 var events = require('events');
 var util = require('util');
 
@@ -16,8 +17,14 @@ function Cache(options, cb) {
 	cache.modules = ['memory']; // Shorthand method that drivers should load - these should exist in modules/
 
 	cache.modulePath = `${__dirname}/modules`
+
+	/**
+	* The currently active module we are using to actually cache things
+	* This is computed via init()
+	* Its spec should resemble a standard driver export (e.g. use `id` key to determine unique ID)
+	* @var {Object}
+	*/
 	cache.activeModule;
-	cache.activeDriver; // Computed during init()
 
 	cache.settings = {
 		init: true, // automatically run cache.init() when constructing
@@ -73,6 +80,7 @@ function Cache(options, cb) {
 						} else if (res) { // Response is truthy - accept module load
 							cache.emit('loadedMod', driverName);
 							cache.activeModule = mod;
+							cache.activeModule.id = driverName;
 							next();
 						} else { // No response - try next
 							cache.emit('cantLoad', driverName);
@@ -88,8 +96,10 @@ function Cache(options, cb) {
 			.then(function(next) {
 				if (!cache.activeModule) {
 					cache.emit('noMods');
+					debug('No module to load!');
 					return next('No module available to load from list: ' + cache.modules.join(', '));
 				} else {
+					debug('Using module', cache.activeModule.id);
 					next();
 				}
 			})
@@ -114,8 +124,10 @@ function Cache(options, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		if (argy.isType(key, 'object')) {
+			debug('Set Object' + (expiry ? ` (Expiry ${expiry})` : '') + ':');
 			async()
 				.forEach(key, function(next, val, key) {
+					debug('> Set', key);
 					cache.activeModule.set(key, val, expiry, next);
 				})
 				.end(function(err) {
@@ -125,6 +137,7 @@ function Cache(options, cb) {
 					}
 				})
 		} else {
+			debug('Set ' + key  + (expiry ? ` (Expiry ${expiry})` : ''));
 			cache.activeModule.set(key, val, expiry, cb || _.noop);
 		}
 
@@ -142,6 +155,7 @@ function Cache(options, cb) {
 	cache.get = argy('scalar [object|array|scalar] function', function(key, fallback, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
+		debug('Get', key);
 		cache.activeModule.get(key, fallback, cb || _.noop);
 
 		return cache;
@@ -157,6 +171,7 @@ function Cache(options, cb) {
 	cache.unset = argy('scalar [function]', function(key, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
+		debug('Unset', key);
 		cache.activeModule.unset(key, cb || _.noop);
 
 		return cache;
@@ -172,6 +187,7 @@ function Cache(options, cb) {
 	cache.vacuume = argy('[function]', function(cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
+		debug('Vacuume');
 		cache.activeModule.vacuume(cb || _.noop);
 
 		return cache;
