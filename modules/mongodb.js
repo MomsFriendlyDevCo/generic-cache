@@ -1,26 +1,22 @@
 var _ = require('lodash');
 var async = require('async-chainable');
-var monoxide = require('monoxide');
+var mongoose = require('mongoose');
 
 module.exports = function(settings) {
 	var driver = this;
 	driver.store = {};
 
+	driver.schema;
 	driver.model;
 
 	driver.settings = _.defaults(settings, {
 		mongodb: {
 			uri: 'mongodb://localhost/mfdc-cache',
+			collection: 'mfdcCaches',
 		},
 	});
 
 	driver.canLoad = function(cb) {
-		_.defaultsDeep(settings, {
-			mongodb: {
-				collection: 'mfdcCaches',
-			},
-		});
-
 		async()
 			// Sanity checks {{{
 			.then(function(next) {
@@ -30,16 +26,18 @@ module.exports = function(settings) {
 			// }}}
 			// Connect {{{
 			.then(function(next) {
-				monoxide.connect(settings.mongodb.uri, next);
+				mongoose.connect(settings.mongodb.uri, next);
 			})
 			// }}}
 			// Setup storage schema {{{
 			.then(function(next) {
-				driver.model = monoxide.schema(settings.mongodb.collection, {
-					key: {type: 'string', index: {unique: true}},
-					expiry: {type: 'date'},
-					value: {type: 'mixed'},
+				driver.schema = new mongoose.Schema({
+					key: {type: mongoose.Schema.Types.String, index: {unique: true}},
+					expiry: {type: mongoose.Schema.Types.Date},
+					value: {type: mongoose.Schema.Types.Mixed},
 				});
+				driver.model = mongoose.model('routeCache', driver.schema);
+
 				next();
 			})
 			// }}}
@@ -52,24 +50,27 @@ module.exports = function(settings) {
 	};
 
 	driver.set = function(key, value, expiry, cb) {
-		driver.model.create({key, value, expiry}, function(err, res) {
-			if (err && err.code && err.code == 11000) { // Dupe - clear and retry
-				driver.unset(key, ()=> {
-					driver.set(key, value, expiry, (err, res) => {
-						if (err) return cb(err);
-						cb(null, value);
-					});
-				});
-			} else if (err) {
-				return cb(err);
-			} else {
-				cb(null, value);
-			}
-		});
+		async()
+			// Find existing document if it exists {{{
+			.then('existing', function(next) {
+				driver.model.findOne({key}, next);
+			})
+			// }}}
+			// Update or create document {{{
+			.then(function(next) {
+				if (this.existing) {
+					this.existing.save({value, $ignoreModified: true}, next);
+				} else {
+					driver.model.create({key, value, expiry}, next);
+				}
+			})
+			// }}}
+			.end(cb)
+
 	};
 
 	driver.get = function(key, fallback, cb) {
-		driver.model.findOne({key, $errNotFound: false}, (err, val) => {
+		driver.model.findOne({key}, (err, val) => {
 			if (!val) { // Not found
 				cb(null, fallback || undefined);
 			} else if (val.expiry && val.expiry < new Date()) { // Expired
@@ -83,11 +84,11 @@ module.exports = function(settings) {
 	};
 
 	driver.unset = function(key, cb) {
-		driver.model.delete({key}, cb);
+		driver.model.deleteOne({key}, cb);
 	};
 
 	driver.vacuume = function(cb) {
-		driver.model.delete({
+		driver.model.deleteMany({
 			expiry: {$lt: new Date()},
 		}, cb);
 	};

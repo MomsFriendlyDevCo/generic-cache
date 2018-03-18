@@ -38,6 +38,6 @@
   },
   "optionalDependencies": {
     "memcached": "^2.2.2",
-    "monoxide": "0.0.92"
+    "mongoose": "^5.0.10"
   }
 }
