@@ -28,6 +28,7 @@ function Cache(options, cb) {
 
 	cache.settings = {
 		init: true, // automatically run cache.init() when constructing
+		keyMangle: key => key,
 		modules: ['memory'],
 	};
 
@@ -128,7 +129,7 @@ function Cache(options, cb) {
 			async()
 				.forEach(key, function(next, val, key) {
 					debug('> Set', key);
-					cache.activeModule.set(key, val, expiry, next);
+					cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, next);
 				})
 				.end(function(err) {
 					if (argy.isType(cb, 'function')) {
@@ -138,7 +139,7 @@ function Cache(options, cb) {
 				})
 		} else {
 			debug('Set ' + key  + (expiry ? ` (Expiry ${expiry})` : ''));
-			cache.activeModule.set(key, val, expiry, cb || _.noop);
+			cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, cb || _.noop);
 		}
 
 		return cache;
@@ -156,7 +157,7 @@ function Cache(options, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		debug('Get', key);
-		cache.activeModule.get(key, fallback, cb || _.noop);
+		cache.activeModule.get(cache.settings.keyMangle(key), fallback, cb || _.noop);
 
 		return cache;
 	});
@@ -172,7 +173,7 @@ function Cache(options, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		debug('Unset', key);
-		cache.activeModule.unset(key, cb || _.noop);
+		cache.activeModule.unset(cache.settings.keyMangle(key), cb || _.noop);
 
 		return cache;
 	});

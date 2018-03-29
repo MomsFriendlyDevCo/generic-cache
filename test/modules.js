@@ -14,7 +14,7 @@ var mlog = require('mocha-logger');
 		let cache;
 		before(function(done) {
 			this.timeout(5000);
-			cache = new Cache({modules: mod}, done)
+			cache = new Cache({modules: mod, keyMangle: key => 'blah' + key}, done)
 				.on('loadedMod', mod => mlog.log('Loaded mod', mod))
 				.on('noMods', ()=> {
 					mlog.log('Module unavailable');
