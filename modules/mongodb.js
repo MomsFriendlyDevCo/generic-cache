@@ -36,7 +36,7 @@ module.exports = function(settings) {
 					expiry: {type: mongoose.Schema.Types.Date},
 					value: {type: mongoose.Schema.Types.Mixed},
 				});
-				driver.model = mongoose.model('routeCache', driver.schema);
+				driver.model = mongoose.model(settings.mongodb.collection, driver.schema);
 
 				next();
 			})
