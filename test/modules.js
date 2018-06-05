@@ -4,6 +4,7 @@ var expect = require('chai').expect;
 var mlog = require('mocha-logger');
 
 [
+	'filesystem',
 	'memory',
 	'memcached',
 	'mongodb',

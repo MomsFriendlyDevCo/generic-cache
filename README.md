@@ -50,6 +50,8 @@ Valid options are:
 | `init`               | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
 | `keyMangle`          | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
 | `modules`            | Array    | `['memory']`                       | What modules to attempt to load                                      |
+| `filesystem`         | Object   | See below                          | Filesystem module specific settings                                  |
+| `filesystem.path`    | Function | os.tempdir + key + '.cache.json'   | How to calculate the file path to save. Defaults to the OS temp dir  |
 | `memcached`          | Object   | See below                          | MemcacheD module specific settings                                   |
 | `memcached.server`   | String   | `'127.0.0.1:11211'`                | The MemcacheD server address to use                                  |
 | `memcached.lifetime` | Number   | `1000*60` (1h)                     | The default expiry time, unless otherwise specified                  |
