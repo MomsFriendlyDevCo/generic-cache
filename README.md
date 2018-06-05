@@ -30,6 +30,22 @@ storage.hash(complexObject, val => ...)
 ```
 
 
+Supported Caching Drivers
+=========================
+
+| Driver     | Requires         | Maximum object size |
+|------------|------------------|---------------------|
+| filesystem | Writable FS area | Infinite            |
+| memcached  | MemcacheD daemon | 1mb                 |
+| memory     | Nothing          | Infinite            |
+| mongodb    | MongoDB daemon   | 16mb                |
+
+**NOTES**:
+
+* By default MemcacheD cahces 1mb slabs, see the documentation of the daemon to increase this
+* While memory storage is theoretically infinite Node has a memory limit of 1.4gb by default. See the node CLI for details on how to increase this
+
+
 API
 ===
 
