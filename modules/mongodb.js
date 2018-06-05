@@ -4,7 +4,6 @@ var mongoose = require('mongoose');
 
 module.exports = function(settings) {
 	var driver = this;
-	driver.store = {};
 
 	driver.schema;
 	driver.model;
@@ -53,7 +52,8 @@ module.exports = function(settings) {
 		async()
 			// Find existing document if it exists {{{
 			.then('existing', function(next) {
-				driver.model.findOne({key}, next);
+				driver.model.findOne({key})
+					.exec(next);
 			})
 			// }}}
 			// Update or create document {{{
@@ -70,17 +70,19 @@ module.exports = function(settings) {
 	};
 
 	driver.get = function(key, fallback, cb) {
-		driver.model.findOne({key}, (err, val) => {
-			if (!val) { // Not found
-				cb(null, fallback || undefined);
-			} else if (val.expiry && val.expiry < new Date()) { // Expired
-				driver.unset(key, ()=> {
-					cb(null, fallback);
-				});
-			} else { // Value ok
-				cb(null, val.value);
-			}
-		});
+		driver.model.findOne({key})
+			.lean()
+			.exec((err, doc) => {
+				if (!doc) { // Not found
+					cb(null, fallback || undefined);
+				} else if (doc.expiry && doc.expiry < new Date()) { // Expired
+					driver.unset(key, function() {
+						cb(null, fallback);
+					});
+				} else { // Value ok
+					cb(null, doc.value);
+				}
+			});
 	};
 
 	driver.unset = function(key, cb) {
