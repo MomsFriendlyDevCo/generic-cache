@@ -3,7 +3,6 @@ var memcached = require('memcached');
 
 module.exports = function(settings) {
 	var driver = this;
-	driver.store = {};
 	driver.memcacheClient;
 
 	driver.settings = _.defaults(settings, {
