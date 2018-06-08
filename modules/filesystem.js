@@ -10,6 +10,7 @@ module.exports = function(settings) {
 	driver.settings = _.defaults(settings, {
 		filesystem: {
 			path: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), key + '.cache.json')),
+			pathSwap: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), key + '.cache.swap.json')),
 		},
 	});
 
@@ -19,15 +20,29 @@ module.exports = function(settings) {
 
 	driver.set = function(key, val, expiry, cb) {
 		async()
-			.then('path', function(next) {
-				driver.settings.filesystem.path(key, val, expiry, next);
+			.parallel({
+				path: function(next) {
+					driver.settings.filesystem.path(key, val, expiry, next);
+				},
+				pathSwap: function(next) {
+					driver.settings.filesystem.pathSwap(key, val, expiry, next);
+				},
 			})
 			.then(function(next) {
-				fs.writeFile(this.path, JSON.stringify(val), next);
+				fs.writeFile(this.pathSwap, JSON.stringify(val), next);
 			})
 			.then(function(next) { // Set the modified time to the expiry
 				if (!expiry) expiry = new Date('2500-01-01'); // Set expiry to a stupid future value
-				fs.utimes(this.path, expiry, expiry, next);
+				fs.utimes(this.pathSwap, expiry, expiry, next);
+			})
+			.then(function(next) { // Delete the original path
+				fs.unlink(this.path, function(err) {
+					// Purposely ignoring errors - original file probably didn't exist in the first place
+					next();
+				});
+			})
+			.then(function(next) { // Move the swap file over the original path
+				fs.rename(this.pathSwap, this.path, next);
 			})
 			.end(function(err) {
 				if (err) return cb(err);
@@ -37,8 +52,23 @@ module.exports = function(settings) {
 
 	driver.get = function(key, fallback, cb) {
 		async()
-			.then('path', function(next) {
-				driver.settings.filesystem.path(key, null, null, next);
+			.parallel({
+				path: function(next) {
+					driver.settings.filesystem.path(key, null, null, next);
+				},
+				pathSwap: function(next) {
+					driver.settings.filesystem.pathSwap(key, null, null, next);
+				},
+			})
+			.then(function(next) { // Loop until the swap file doesn't exist
+				var swapPath = this.pathSwap;
+				var checkSwap = function() {
+					fs.access(swapPath, function(err) {
+						if (err) return next(); // Swap doesn't exist - continue on
+						setTimeout(checkSwap, _.random(0, 100)); // Schedule another check at a random offset
+					});
+				};
+				checkSwap();
 			})
 			.then('stats', function(next) {
 				fs.stat(this.path, function(err, stats) {
