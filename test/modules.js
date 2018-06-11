@@ -62,6 +62,14 @@ var mlog = require('mocha-logger');
 			});
 		});
 
+		it('should restore simple values again (baz)', done => {
+			cache.get('baz', (err, val) => {
+				expect(err).to.not.be.ok;
+				expect(val).to.be.equal('Baz');
+				done();
+			});
+		});
+
 		it('should unset values', () => {
 			cache.unset('foo', () => {
 				cache.get('foo', (err, val) => {
