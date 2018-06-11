@@ -95,5 +95,9 @@ module.exports = function(settings) {
 		}, cb);
 	};
 
+	driver.destroy = function(cb) {
+		mongoose.connection.close(cb);
+	};
+
 	return driver;
 };

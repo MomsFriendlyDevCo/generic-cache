@@ -23,6 +23,10 @@ var mlog = require('mocha-logger');
 				})
 		});
 
+		after(function(done) {
+			cache.destroy(done);
+		});
+
 		it('should store simple key/vals (as single setter)', done => {
 			cache.set('foo', 'Foo', done);
 		});

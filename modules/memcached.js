@@ -54,5 +54,10 @@ module.exports = function(settings) {
 		cb();
 	};
 
+	driver.destroy = function(cb) {
+		driver.memcacheClient.end();
+		cb();
+	};
+
 	return driver;
 };

@@ -196,6 +196,18 @@ function Cache(options, cb) {
 
 
 	/**
+	* Politely close all driver resource handles
+	* @param {function} cb The callback to fire when completed
+	* @returns {Object} This chainable cache module
+	*/
+	cache.destroy = argy('[function]', function(cb) {
+		debug('Destroy');
+		cache.activeModule.destroy(cb || _.noop);
+		return cache;
+	});
+
+
+	/**
 	* Utility function to hash complex objects
 	* @param {*} val Value to hash. If this is a complex object it will be run via JSON.stringify
 	* @returns {string} The SHA256 hash of the input

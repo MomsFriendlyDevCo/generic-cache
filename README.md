@@ -107,6 +107,11 @@ Attempt to clean up any left over or expired cache entries.
 This is only supported by some modules.
 
 
+cache.destroy([callback])
+---------------
+Politely close all driver resource handles before shutting down.
+
+
 Debugging
 =========
 This module uses the [debug NPM module](https://github.com/visionmedia/debug) for debugging. To enable set the environment variable to `DEBUG=cache`.

@@ -121,5 +121,9 @@ module.exports = function(settings) {
 		cb();
 	};
 
+	driver.destroy = function(cb) {
+		cb();
+	};
+
 	return driver;
 };
