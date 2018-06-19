@@ -123,7 +123,9 @@ module.exports = function(settings) {
 				var path = this.path;
 				fs.access(this.path, function(err) {
 					if (err) return next(); // File doesn't exist anyway
-					fs.unlink(path, next); // Delete file
+					fs.unlink(this.path, function() { // Delete file - ignoring errors
+						next();
+					});
 				});
 				if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
 			})
