@@ -43,10 +43,7 @@ module.exports = function(settings) {
 				fs.utimes(this.pathSwap, now, expiry, next);
 			})
 			.then(function(next) { // Delete the original path
-				fs.unlink(this.path, function(err) {
-					// Purposely ignoring errors - original file probably didn't exist in the first place
-					next();
-				});
+				fs.unlink(this.path, err => next()) // Purposely ignore errors - original file probably didn't exist in the first place
 			})
 			.then(function(next) { // Move the swap file over the original path
 				fs.rename(this.pathSwap, this.path, next);
@@ -71,7 +68,7 @@ module.exports = function(settings) {
 			.then(function(next) { // Loop until the swap file doesn't exist
 				var swapPath = this.pathSwap;
 				var checkSwap = function() {
-					fs.access(swapPath, function(err) {
+					fs.access(swapPath, err => {
 						if (err) return next(); // Swap doesn't exist - continue on
 						setTimeout(checkSwap, _.random(0, 100)); // Schedule another check at a random offset
 					});
@@ -79,7 +76,7 @@ module.exports = function(settings) {
 				checkSwap();
 			})
 			.then('stats', function(next) {
-				fs.stat(this.path, function(err, stats) {
+				fs.stat(this.path, (err, stats) => {
 					if (err) return next();
 					next(null, stats);
 				});
@@ -88,9 +85,7 @@ module.exports = function(settings) {
 				if (!this.stats) { // No stats - no file to read
 					return next(null, false)
 				} else if (this.stats.mtime < new Date()) { // Modified date is in the past - the file has expired
-					fs.unlink(this.path, function(err) { // Delete the file then respond that it has expired
-						next(null, false);
-					});
+					fs.unlink(this.path, err => next(null, false)); // Delete the file then respond that it has expired
 					if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
 				} else {
 					next(null, true);
@@ -102,7 +97,7 @@ module.exports = function(settings) {
 				if (driver.settings.filesystem.useMemory && driver.memoryCache[key] && driver.memoryCache[key].created >= this.stats.ctime - driver.settings.filesystem.memoryFuzz) { // Use the memory cache instead of the actual file
 					next(null, driver.memoryCache[key].value);
 				} else { // Read the file in fresh
-					fs.readFile(this.path, function(err, buf) {
+					fs.readFile(this.path, (err, buf) => {
 						if (err) return next(err);
 						next(null, JSON.parse(buf));
 					});
@@ -121,11 +116,9 @@ module.exports = function(settings) {
 			})
 			.then(function(next) {
 				var path = this.path;
-				fs.access(this.path, function(err) {
+				fs.access(this.path, err => {
 					if (err) return next(); // File doesn't exist anyway
-					fs.unlink(this.path, function() { // Delete file - ignoring errors
-						next();
-					});
+					fs.unlink(this.path, () => next()); // Delete file - ignoring errors
 				});
 				if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
 			})

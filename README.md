@@ -114,6 +114,7 @@ This is only supported by some modules.
 cache.destroy([callback])
 ---------------
 Politely close all driver resource handles before shutting down.
+This function waits for all set operations to complete - even if you didn't attach a callback.
 
 
 Debugging

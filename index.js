@@ -18,6 +18,8 @@ function Cache(options, cb) {
 
 	cache.modulePath = `${__dirname}/modules`
 
+	cache.flushing = 0; // Number of set operations still writing (used by destroy to determine when to actually die)
+
 	/**
 	* The currently active module we are using to actually cache things
 	* This is computed via init()
@@ -129,7 +131,11 @@ function Cache(options, cb) {
 			async()
 				.forEach(key, function(next, val, key) {
 					debug('> Set', key);
-					cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, next);
+					cache.flushing++;
+					cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, err => {
+						cache.flushing--;
+						next(err);
+					});
 				})
 				.end(function(err) {
 					if (argy.isType(cb, 'function')) {
@@ -139,7 +145,11 @@ function Cache(options, cb) {
 				})
 		} else {
 			debug('Set ' + key  + (expiry ? ` (Expiry ${expiry})` : ''));
-			cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, cb || _.noop);
+			cache.flushing++;
+			cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, err => {
+				cache.flushing--;
+				if (cb) cb(err);
+			});
 		}
 
 		return cache;
@@ -197,12 +207,31 @@ function Cache(options, cb) {
 
 	/**
 	* Politely close all driver resource handles
+	* NOTE: The destroy function will wait until all set() operations complete before calling the callback
 	* @param {function} cb The callback to fire when completed
 	* @returns {Object} This chainable cache module
 	*/
 	cache.destroy = argy('[function]', function(cb) {
 		debug('Destroy');
-		cache.activeModule.destroy(cb || _.noop);
+
+		(cache.activeModule && cache.activeModule.destroy ? cache.activeModule.destroy : _.noop)(()=> {
+			debug('Destroy - modules terminated');
+
+			var dieAttempt = 0;
+			var dieWait = 100;
+			var tryDying = ()=> {
+				if (cache.flushing > 0) {
+					debug(`Destory - still flushing. Attempt ${dieAttempt++}, will try again in ${dieWait}ms`);
+					dieWait *= 2; // Increase wait backoff
+					setTimeout(tryDying, dieWait);
+				} else if (cb) {
+					cb();
+				}
+			};
+
+			tryDying();
+		});
+
 		return cache;
 	});
 
