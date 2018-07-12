@@ -74,7 +74,7 @@ function Cache(options, cb) {
 			.forEach(_.castArray(cache.settings.modules), function(next, driverName) {
 				if (cache.activeModule) return next(); // Already loaded something
 				try {
-					var mod = require(`${cache.modulePath}/${driverName}`)(cache.settings);
+					var mod = require(`${cache.modulePath}/${driverName}`).call(this, cache.settings);
 
 					mod.canLoad((err, res) => {
 						if (err) {
@@ -190,8 +190,26 @@ function Cache(options, cb) {
 
 
 	/**
+	* Return a list of current cache values
+	* Only some drivers may implement this function
+	* Each return item is expected to have at least 'id' with optional keys 'expiry', 'created'
+	* @param {function} cb The callback to fire when completed. Called as (err, items)
+	* @returns {Object} This chainable cache module
+	*/
+	cache.list = argy('[function]', function(cb) {
+		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
+
+		debug('List');
+		cache.activeModule.list(cb || _.noop);
+
+		return cache;
+	});
+
+
+	/**
 	* Attempt to clean up any remaining items
 	* Only some drivers may implement this function
+	* NOTE: If the driver does not implement BUT the driver has a list function that returns expiry data a simple loop + expiry check + unset worker will be implemented instead
 	* @param {function} cb The callback to fire when completed
 	* @returns {Object} This chainable cache module
 	*/
@@ -199,9 +217,70 @@ function Cache(options, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		debug('Vacuume');
-		cache.activeModule.vacuume(cb || _.noop);
+
+		if (cache.activeModule.vacuume) { // Driver implments its own function
+			cache.activeModule.vacuume(cb);
+		} else if (cache.activeModule.list && cache.activeModule.unset) { // Drive implements a list which we can use instead
+			var now = new Date();
+			async()
+				.then('items', next => cache.activeModule.list(next))
+				.forEach('items', (next, item) => {
+					if (item.id && item.expiry && item.expiry < now) {
+						cache.activeModule.unset(item.id, next);
+					} else {
+						next();
+					}
+				})
+				.end(cb);
+		} else {
+			throw new Error('Vacuume is not supported by the selected cache module');
+		}
 
 		return cache;
+	});
+
+
+	/**
+	* Attempt to erase ALL cache contents
+	* Only some drivers may implement this function
+	* NOTE: If the driver does not implement BUT the driver has a list function that returns expiry data a simple loop + expiry check + unset worker will be implemented instead
+	* @param {function} cb The callback to fire when completed
+	* @returns {Object} This chainable cache module
+	*/
+	cache.clear = argy('[function]', function(cb) {
+		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
+		debug('Clear');
+
+		if (cache.activeModule.clear) { // Driver implments its own function
+			cache.activeModule.clear(cb);
+		} else if (cache.activeModule.list && cache.activeModule.unset) { // Drive implements a list which we can use instead
+			async()
+				.then('items', next => cache.activeModule.list(next))
+				.forEach('items', (next, item) => cache.activeModule.unset(item.id, next))
+				.end(cb);
+		} else {
+			throw new Error('Clear is not supported by the selected cache module');
+		}
+	});
+
+
+	/**
+	* Returns whether the loaded module supports a given function
+	* @param {string} func The function to query
+	* @returns {boolean} Whether the active module supports the action
+	*
+	* @example Can a module clear?
+	* cache.can('clear') //= Value depends on module
+	*/
+	cache.can = argy('string', function(func) {
+		switch (func) {
+			case 'clear':
+			case 'vacuume':
+				return _.isFunction(cache.activeModule[func])
+				|| (_.isFunction(cache.activeModule.list) && _.isFunction(cache.activeModule.unset))
+			default:
+				return !! _.isFunction(cache.activeModule[func]);
+		}
 	});
 
 

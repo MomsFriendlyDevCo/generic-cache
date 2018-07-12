@@ -105,6 +105,15 @@ Fetch a single value and call the callback. If the value does not exist the fall
 Callback is called as `(err, value)`.
 
 
+cache.list(callback)
+--------------------
+Attempt to return a list of known cache contents.
+Callback is called as `(err, items)`.
+
+Each item will have at minimum a `id` and `created` value. All other values (e.g. `expiry`) depend on the cache driver being used.
+
+
+
 cache.vacuume([callback])
 -------------------------
 Attempt to clean up any left over or expired cache entries.

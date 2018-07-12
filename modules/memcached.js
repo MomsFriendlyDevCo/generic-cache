@@ -49,11 +49,6 @@ module.exports = function(settings) {
 		driver.memcacheClient.del(key, ()=> cb());
 	};
 
-	driver.vacuume = function(cb) {
-		// Memcache automatically expires entries anyway
-		cb();
-	};
-
 	driver.destroy = function(cb) {
 		driver.memcacheClient.end();
 		cb();

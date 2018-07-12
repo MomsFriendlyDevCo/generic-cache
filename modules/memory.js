@@ -1,3 +1,5 @@
+var _ = require('lodash');
+
 module.exports = function(settings) {
 	var driver = this;
 	driver.store = {};
@@ -10,6 +12,7 @@ module.exports = function(settings) {
 		driver.store[key] = {
 			value: val,
 			expiry: expiry,
+			created: new Date(),
 		};
 
 		cb(null, val);
@@ -32,6 +35,14 @@ module.exports = function(settings) {
 	driver.unset = function(key, cb) {
 		delete driver.store[key];
 		cb();
+	};
+
+	driver.list = function(cb) {
+		cb(null, _.map(driver.store, (v, k) => ({
+			id: k,
+			expiry: v.expiry,
+			created: v.created,
+		})));
 	};
 
 	driver.vacuume = function(cb) {

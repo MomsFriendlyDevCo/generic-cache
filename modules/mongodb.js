@@ -33,6 +33,7 @@ module.exports = function(settings) {
 				driver.schema = new mongoose.Schema({
 					key: {type: mongoose.Schema.Types.String, index: {unique: true}},
 					expiry: {type: mongoose.Schema.Types.Date},
+					created: {type: mongoose.Schema.Types.Date},
 					value: {type: mongoose.Schema.Types.Mixed},
 				});
 				driver.model = mongoose.model(settings.mongodb.collection, driver.schema);
@@ -61,7 +62,7 @@ module.exports = function(settings) {
 				if (this.existing) {
 					this.existing.save({value, $ignoreModified: true}, next);
 				} else {
-					driver.model.create({key, value, expiry}, next);
+					driver.model.create({key, value, expiry, created: new Date()}, next);
 				}
 			})
 			// }}}
@@ -87,6 +88,19 @@ module.exports = function(settings) {
 
 	driver.unset = function(key, cb) {
 		driver.model.deleteOne({key}, cb);
+	};
+
+	driver.list = function(cb) {
+		driver.model.find()
+			.lean()
+			.exec((err, docs) => {
+				if (err) return cb(err);
+				cb(null, docs.map(doc => ({
+					id: doc.key,
+					created: doc.created,
+					expiry: doc.expiry,
+				})));
+			});
 	};
 
 	driver.vacuume = function(cb) {

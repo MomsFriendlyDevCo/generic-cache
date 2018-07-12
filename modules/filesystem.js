@@ -2,6 +2,7 @@ var _ = require('lodash');
 var async = require('async-chainable');
 var fs = require('fs');
 var fspath = require('path');
+var mkdirp = require('mkdirp');
 var os = require('os');
 
 module.exports = function(settings) {
@@ -12,8 +13,11 @@ module.exports = function(settings) {
 			fallbackDate: new Date('2500-01-01'),
 			useMemory: false,
 			memoryFuzz: 200,
-			path: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), key + '.cache.json')),
-			pathSwap: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), key + '.cache.swap.json')),
+			path: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), 'cache', key + '.cache.json')),
+			pathSwap: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), 'cache', key + '.cache.swap.json')),
+			pathList: cb => cb(null, fspath.join(os.tmpdir(), 'cache')),
+			pathFilter: (file, cb) => cb(null, file.endsWith('.cache.json')),
+			pathId: (file, cb) => cb(null, fspath.basename(file, '.cache.json')),
 		},
 	});
 
@@ -35,6 +39,14 @@ module.exports = function(settings) {
 					driver.settings.filesystem.pathSwap(key, val, expiry, next);
 				},
 			})
+			.parallel([
+				function(next) {
+					mkdirp(fspath.dirname(this.path), next);
+				},
+				function(next) {
+					mkdirp(fspath.dirname(this.pathSwap), next);
+				},
+			])
 			.then(function(next) {
 				fs.writeFile(this.pathSwap, JSON.stringify(val), next);
 			})
@@ -125,9 +137,74 @@ module.exports = function(settings) {
 			.end(cb);
 	};
 
-	driver.vacuume = function(cb) {
-		// FIXME: Not currently supported
-		cb();
+	driver.list = function(cb) {
+		async()
+			// Calculate path {{{
+			.then('path', function(next) {
+				driver.settings.filesystem.pathList(next);
+			})
+			// }}}
+			// Read directory contents {{{
+			.then('files', function(next) {
+				fs.readdir(this.path, (err, res) => {
+					if (err && err.code == 'ENOENT') {
+						return next(null, []);
+					} else if (err) {
+						return next(err);
+					} else {
+						next(null, res);
+					}
+				});
+			})
+			// }}}
+			.map('files', 'files', function(next, file) {
+				var path = fspath.join(this.path, file);
+				async()
+					// Check if the file is valid {{{
+					.then('isValid', function(next) {
+						driver.settings.filesystem.pathFilter(path, next);
+					})
+					// }}}
+					.parallel({
+						// Extract the ID {{{
+						id: function(next) {
+							if (!this.isValid) return next();
+							driver.settings.filesystem.pathId(path, next);
+						},
+						// }}}
+						// Fetch the stats {{{
+						stat: function(next) {
+							if (!this.isValid) return next();
+							fs.stat(path, function(err, stat) { // Try and read the stats - if we fail remove it from the list
+								if (err) return next();
+								next(null, stat);
+							});
+						},
+						// }}}
+					})
+					// Compose the return entity {{{
+					.end(function(err) {
+						if (err) return next(err);
+						if (!this.isValid || !this.stat) return next();
+						next(null, {
+							id: this.id,
+							created: this.stat.ctime,
+							expiry: this.stat.mtime,
+						})
+					})
+					// }}}
+			})
+			// Fitler out invalid files {{{
+			.then('files', function(next) {
+				next(null, this.files.filter(file => !! file));
+			})
+			// }}}
+			// End {{{
+			.end(function(err) {
+				if (err) return cb(err);
+				cb(null, this.files);
+			})
+			// }}}
 	};
 
 	driver.destroy = function(cb) {

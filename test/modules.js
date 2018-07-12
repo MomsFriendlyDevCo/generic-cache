@@ -23,9 +23,15 @@ var mlog = require('mocha-logger');
 				})
 		});
 
-		after(function(done) {
-			cache.destroy(done);
+		before('clear out existing items', function(done) {
+			if (!cache.can('clear')) return done();
+			cache.clear(err => {
+				expect(err).to.not.be.ok;
+				done();
+			});
 		});
+
+		after(done => cache.destroy(done));
 
 		it('should store simple key/vals (as single setter)', done => {
 			cache.set('foo', 'Foo', done);
@@ -66,6 +72,20 @@ var mlog = require('mocha-logger');
 			cache.get('baz', (err, val) => {
 				expect(err).to.not.be.ok;
 				expect(val).to.be.equal('Baz');
+				done();
+			});
+		});
+
+		it('should get a list of the current cache IDs', function(done) {
+			if (!cache.can('list')) return this.skip();
+			cache.list((err, res) => {
+				expect(err).to.not.be.ok;
+				expect(res).to.be.an('array');
+				expect(res).to.have.length(3);
+				res.forEach(i => {
+					expect(i).to.have.property('id');
+					expect(i.id).to.be.oneOf(['blahfoo', 'blahbar', 'blahbaz']);
+				});
 				done();
 			});
 		});
@@ -122,6 +142,27 @@ var mlog = require('mocha-logger');
 			});
 		});
 
+		it('should vaccume all expired items', function(done) {
+			if (!cache.can('vacuume')) return this.skip();
+			cache.vacuume(err => {
+				expect(err).to.not.be.ok;
+				cache.list((err, list) => {
+					expect(err).to.not.be.ok;
+					expect(list).to.be.an('array');
+					expect(list).to.have.length(2); // Two items should still be around, not having expired
+					done();
+				});
+			});
+		});
+
+
+		it('should clear all items', function(done) {
+			if (!cache.can('clear')) return this.skip();
+			cache.clear(err => {
+				expect(err).to.not.be.ok;
+				done();
+			});
+		});
 
 	});
 
