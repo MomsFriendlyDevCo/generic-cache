@@ -39,7 +39,7 @@ Supported Caching Drivers
 | memcached  | MemcacheD daemon | 1mb                 | No           | No              |
 | memory     | Nothing          | Infinite            | Yes          | Yes             |
 | mongodb    | MongoDB daemon   | 16mb                | Yes          | Yes             |
-| redis      | Redis daemon     | 512mb               | No           | No              |
+| redis      | Redis daemon     | 512mb               | Yes          | No              |
 
 
 **NOTES**:

@@ -42,9 +42,35 @@ module.exports = function(settings) {
 		driver.client.del(key, cb);
 	};
 
+	driver.list = function(cb) {
+		var glob = driver.utilRegExpToGlob(driver.settings.keyQuery());
+		if (glob == '.') glob = '*'; // Convert single char (anything) matches to glob all
+
+		driver.client.keys(glob, (err, list) => {
+			if (err) return cb(err);
+
+			cb(null, list.map(doc => ({
+				id: doc,
+			})));
+		});
+	};
+
 	driver.destroy = function(cb) {
 		driver.client.quit(cb);
 	};
+
+	/**
+	* Utility function to convert a RegExp to a Redis glob query
+	* @param {RegExp} re Regular expression to convert
+	* @returns {string} A (basic) Redis glob
+	*/
+	driver.utilRegExpToGlob = re =>
+		re
+			.toString()
+			.replace(/^\/(.*)\/$/, '$1') // Remove prefix / suffix braces
+			.replace(/\?/g, '.')
+			.replace(/\.\*/g, '*')
+			.replace(/\.\+/g, '*');
 
 	return driver;
 };
