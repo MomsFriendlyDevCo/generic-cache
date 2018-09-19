@@ -278,7 +278,7 @@ function Cache(options, cb) {
 			case 'vacuume':
 				return _.isFunction(cache.activeModule[func])
 				|| (_.isFunction(cache.activeModule.list) && _.isFunction(cache.activeModule.unset))
-			default:
+			default: // Also includes 'list'
 				return !! _.isFunction(cache.activeModule[func]);
 		}
 	});

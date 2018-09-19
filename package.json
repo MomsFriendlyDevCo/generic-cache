@@ -39,6 +39,7 @@
   },
   "optionalDependencies": {
     "memcached": "^2.2.2",
-    "mongoose": "^5.0.10"
+    "mongoose": "^5.0.10",
+    "redis": "^2.8.0"
   }
 }

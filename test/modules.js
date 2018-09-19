@@ -8,6 +8,7 @@ var mlog = require('mocha-logger');
 	'memory',
 	'memcached',
 	'mongodb',
+	'redis',
 ].forEach(mod => {
 
 	describe(`${mod} module`, function() {
