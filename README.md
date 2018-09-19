@@ -82,6 +82,7 @@ Valid options are:
 | `mongodb`                 | Object   | See below                          | MongoDB module specific options                                      |
 | `mongodb.uri`             | String   | `'mongodb://localhost/mfdc-cache'` | The MongoDB URI to connect to                                        |
 | `mongodb.collection`      | String   | `mfdcCaches`                       | The collection to store cache information within                     |
+| `redis`                   | Object   | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis |
 
 
 
