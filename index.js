@@ -30,7 +30,7 @@ function Cache(options, cb) {
 
 	cache.settings = {
 		init: true, // automatically run cache.init() when constructing
-		keyMangle: ()=> key,
+		keyMangle: key => key,
 		keyQuery: q => /./,
 		modules: ['memory'],
 	};
