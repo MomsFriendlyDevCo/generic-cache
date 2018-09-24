@@ -5,7 +5,7 @@ module.exports = function(settings, cache) {
 	var driver = this;
 	driver.memcacheClient;
 
-	driver.settings = _.defaults(settings, {
+	driver.settings = _.defaultsDeep(settings, {
 		memcached: {
 			server: '127.0.0.1:11211',
 			lifetime: 1000 * 60, // Default expiry if unspecified - 1 Hour

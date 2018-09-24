@@ -4,7 +4,7 @@ var redis = require('redis');
 module.exports = function(settings, cache) {
 	var driver = this;
 
-	driver.settings = _.defaults(settings, {
+	driver.settings = _.defaultsDeep(settings, {
 		redis: {
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,

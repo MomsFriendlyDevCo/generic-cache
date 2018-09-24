@@ -8,7 +8,7 @@ var os = require('os');
 module.exports = function(settings, cache) {
 	var driver = this;
 
-	driver.settings = _.defaults(settings, {
+	driver.settings = _.defaultsDeep(settings, {
 		filesystem: {
 			fallbackDate: new Date('2500-01-01'),
 			useMemory: false,

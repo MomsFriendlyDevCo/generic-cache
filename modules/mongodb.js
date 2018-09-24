@@ -8,7 +8,7 @@ module.exports = function(settings, cache) {
 	driver.schema;
 	driver.model;
 
-	driver.settings = _.defaults(settings, {
+	driver.settings = _.defaultsDeep(settings, {
 		mongodb: {
 			uri: 'mongodb://localhost/mfdc-cache',
 			collection: 'mfdcCaches',
