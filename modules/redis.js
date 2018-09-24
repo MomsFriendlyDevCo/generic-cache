@@ -1,11 +1,13 @@
 var _ = require('lodash');
 var redis = require('redis');
 
-module.exports = function(settings) {
+module.exports = function(settings, cache) {
 	var driver = this;
 
 	driver.settings = _.defaults(settings, {
 		redis: {
+			serialize: cache.settings.serialize,
+			deserialize: cache.settings.deserialize,
 		},
 	});
 
@@ -20,13 +22,13 @@ module.exports = function(settings) {
 
 	driver.set = function(key, val, expiry, cb) {
 		if (!expiry) {
-			driver.client.set(key, JSON.stringify(val), err => cb(err, val));
+			driver.client.set(key, driver.settings.redis.serialize(val), err => cb(err, val));
 		} else {
 			var expiryVal = expiry - Date.now();
 			if (!expiryVal) { // Expires immediately - don't bother to store - unset instead
 				driver.unset(key, ()=> cb(null, val));
 			} else {
-				driver.client.set(key, JSON.stringify(val), 'PX', expiryVal, err => cb(err, val));
+				driver.client.set(key, driver.settings.redis.serialize(val), 'PX', expiryVal, err => cb(err, val));
 			}
 		}
 	};
@@ -34,7 +36,7 @@ module.exports = function(settings) {
 	driver.get = function(key, fallback, cb) {
 		driver.client.get(key, (err, val) => {
 			if (err) return cb(err);
-			cb(null, val ? JSON.parse(val) : undefined);
+			cb(null, val ? driver.settings.redis.deserialize(val) : undefined);
 		});
 	};
 

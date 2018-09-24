@@ -33,13 +33,13 @@ storage.hash(complexObject, val => ...)
 Supported Caching Drivers
 =========================
 
-| Driver     | Requires         | Maximum object size | List Support | Vacuume Support |
-|------------|------------------|---------------------|--------------|-----------------|
-| filesystem | Writable FS area | Infinite            | Yes          | No              |
-| memcached  | MemcacheD daemon | 1mb                 | No           | No              |
-| memory     | Nothing          | Infinite            | Yes          | Yes             |
-| mongodb    | MongoDB daemon   | 16mb                | Yes          | Yes             |
-| redis      | Redis daemon     | 512mb               | Yes          | No              |
+| Driver     | Requires         | Maximum object size | List Support | Vacuume Support | Serializer |
+|------------|------------------|---------------------|--------------|-----------------|------------|
+| filesystem | Writable FS area | Infinite            | Yes          | No              | Yes        |
+| memcached  | MemcacheD daemon | 1mb                 | No           | No              | Yes        |
+| memory     | Nothing          | Infinite            | Yes          | Yes             | Not needed |
+| mongodb    | MongoDB daemon   | 16mb                | Yes          | Yes             | Disabled   |
+| redis      | Redis daemon     | 512mb               | Yes          | No              | Yes        |
 
 
 **NOTES**:
@@ -47,6 +47,7 @@ Supported Caching Drivers
 * By default MemcacheD cahces 1mb slabs, see the documentation of the daemon to increase this
 * While memory storage is theoretically infinite Node has a memory limit of 1.4gb by default. See the node CLI for details on how to increase this
 * Some caching systems (notably MemcacheD) automatically vacuume entries
+* For most modules the storage values are encoded / decoded via [marshal](https://github.com/MomsFriendlyDevCo/marshal). This means that complex JS primatives such as Dates, Sets etc. can be stored without issue. This is disabled in the case of MongoDB by default but can be enabled if needed
 
 
 API
@@ -69,6 +70,8 @@ Valid options are:
 | `init`                    | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
 | `keyMangle`               | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
 | `modules`                 | Array    | `['memory']`                       | What modules to attempt to load                                      |
+| `serialize`               | Function | `marshal.serialize`                | The serializing function to use when storing objects                 |
+| `deserialize`             | Function | `marshal.deserialize`              | The deserializing function to use when restoring objects             |
 | `filesystem`              | Object   | See below                          | Filesystem module specific settings                                  |
 | `filesystem.fallbackDate` | Date     | `2500-01-01`                       | Fallback date to use as the filesystem expiry time                   |
 | `filesystem.useMemory`    | Boolean  | `false`                            | Whether to also hold copies of the file contents in RAM as well as saving to disk (makes reads quicker but uses more memory) |
@@ -83,6 +86,12 @@ Valid options are:
 | `mongodb.uri`             | String   | `'mongodb://localhost/mfdc-cache'` | The MongoDB URI to connect to                                        |
 | `mongodb.collection`      | String   | `mfdcCaches`                       | The collection to store cache information within                     |
 | `redis`                   | Object   | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis |
+
+
+**NOTES**:
+
+* All modules expose their own `serialize` / `deserialize` properties which defaults to the main properties by default. These are omitted from the above table for brevity
+* The MongoDB module does *not* serialize or deserialize by default in order to use its own storage format, set the `serialize` / `deserialize` properties to the main cache object to enable this behaviour
 
 
 

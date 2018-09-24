@@ -77,6 +77,64 @@ var mlog = require('mocha-logger');
 			});
 		});
 
+		it('should restore native JS primitives', function(done) {
+			if (mod == 'mongodb') return this.skip(); // Mongo doesn't use a serializer so most of the special types will probably fail
+			var sampleObject = {
+				arrays: [[1, 2, 3], [], [[[]]], [-10, 'Hello', Infinity]],
+				booleans: [true, false],
+				dates: [new Date(), new Date(Date.now() + _.random(100000, 999999)), new Date(Date.now() - _.random(100000, 999999))],
+				// Functions never compare directly in Mocha for some reason
+				//functions: [()=> false, arg => console.log(arg), (a, b, c) => a + b / c],
+				nullables: [null, undefined],
+				numbers: [0, 123, NaN, Infinity, -Infinity, -5, 928, 312312.312312],
+				objects: [{foo: 1, bar: 2, baz: {bazFoo: 3}}, {}, {subKey: [1, 2, {}]}],
+				regex: [/./, /^start/, /end$/, /global/g, /multi-global/mg],
+				sets: [new Set([1, 2, 3, 10]), new Set()],
+				strings: ['', 'a', 'Hello World', '😈🙓😿'],
+			};
+
+			cache.set('testTypes', _.cloneDeep(sampleObject), err => {
+				if (err) return done(err);
+				cache.get('testTypes', (err, val) => {
+					if (err) return done(err);
+					expect(val).to.deep.equal(sampleObject);
+					cache.unset('testTypes', ()=> done());
+				});
+			});
+		});
+
+		it('should restore complex nested objects', done => {
+			var sampleObject = {
+				foo: 'Foo',
+				bar: {
+					barFoo: _.random(10000, 99999),
+					barBar: 'String-' + _.random(10000, 99999),
+					barBaz: _.random(1) ? true : false,
+				},
+				baz: {
+					bazFoo: {
+						bazFooFoo: 'hello',
+						bazFooBar: _.times(100, ()=> _.random(10000, 99999)),
+						bazFooBaz: {
+							bazFooBazFoo: {
+								bazFooBazFooFoo: 123,
+								bazFooBazFooBar: [1, 2, 3],
+							},
+						},
+					},
+				},
+			};
+
+			cache.set('testNested', sampleObject, err => {
+				if (err) return done(err);
+				cache.get('testNested', (err, val) => {
+					if (err) return done(err);
+					expect(val).to.deep.equal(sampleObject);
+					cache.unset('testNested', ()=> done());
+				});
+			});
+		});
+
 		it('should get a list of the current cache IDs', function(done) {
 			if (!cache.can('list')) return this.skip();
 			cache.list((err, res) => {

@@ -1,7 +1,7 @@
 var _ = require('lodash');
 var memcached = require('memcached');
 
-module.exports = function(settings) {
+module.exports = function(settings, cache) {
 	var driver = this;
 	driver.memcacheClient;
 
@@ -13,6 +13,8 @@ module.exports = function(settings) {
 				retries: 1,
 				timeout: 250,
 			},
+			serialize: cache.settings.serialize,
+			deserialize: cache.settings.deserialize,
 		},
 	});
 
@@ -31,7 +33,7 @@ module.exports = function(settings) {
 		} else {
 			driver.memcacheClient.set(
 				key,
-				val,
+				settings.memcached.serialize(val),
 				expiryS,
 				cb
 			);
@@ -41,7 +43,7 @@ module.exports = function(settings) {
 	driver.get = function(key, fallback, cb) {
 		driver.memcacheClient.get(key, (err, val) => {
 			if (err) return cb(err);
-			cb(null, val !== undefined ? val : fallback);
+			cb(null, val !== undefined ? settings.memcached.deserialize(val) : fallback);
 		});
 	};
 

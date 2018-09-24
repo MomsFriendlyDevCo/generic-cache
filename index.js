@@ -4,6 +4,7 @@ var async = require('async-chainable');
 var crypto = require('crypto');
 var debug = require('debug')('cache');
 var events = require('events');
+var marshal = require('@momsfriendlydevco/marshal');
 var util = require('util');
 
 /**
@@ -33,6 +34,8 @@ function Cache(options, cb) {
 		keyMangle: key => key,
 		keyQuery: q => /./,
 		modules: ['memory'],
+		serialize: marshal.serialize,
+		deserialize: marshal.deserialize,
 	};
 
 
@@ -75,7 +78,7 @@ function Cache(options, cb) {
 			.forEach(_.castArray(cache.settings.modules), function(next, driverName) {
 				if (cache.activeModule) return next(); // Already loaded something
 				try {
-					var mod = require(`${cache.modulePath}/${driverName}`).call(this, cache.settings);
+					var mod = require(`${cache.modulePath}/${driverName}`).call(this, cache.settings, cache);
 
 					mod.canLoad((err, res) => {
 						if (err) {

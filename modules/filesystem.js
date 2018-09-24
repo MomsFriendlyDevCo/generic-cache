@@ -5,7 +5,7 @@ var fspath = require('path');
 var mkdirp = require('mkdirp');
 var os = require('os');
 
-module.exports = function(settings) {
+module.exports = function(settings, cache) {
 	var driver = this;
 
 	driver.settings = _.defaults(settings, {
@@ -18,6 +18,8 @@ module.exports = function(settings) {
 			pathList: cb => cb(null, fspath.join(os.tmpdir(), 'cache')),
 			pathFilter: (file, cb) => cb(null, file.endsWith('.cache.json')),
 			pathId: (file, cb) => cb(null, fspath.basename(file, '.cache.json')),
+			serialize: cache.settings.serialize,
+			deserialize: cache.settings.deserialize,
 		},
 	});
 
@@ -48,7 +50,7 @@ module.exports = function(settings) {
 				},
 			])
 			.then(function(next) {
-				fs.writeFile(this.pathSwap, JSON.stringify(val), next);
+				fs.writeFile(this.pathSwap, settings.filesystem.serialize(val), next);
 			})
 			.then(function(next) { // Set the modified time to the expiry
 				if (!expiry) expiry = driver.settings.filesystem.fallbackDate; // Set expiry to a stupid future value
@@ -111,7 +113,7 @@ module.exports = function(settings) {
 				} else { // Read the file in fresh
 					fs.readFile(this.path, (err, buf) => {
 						if (err) return next(err);
-						next(null, JSON.parse(buf));
+						next(null, settings.filesystem.deserialize(buf));
 					});
 				}
 			})

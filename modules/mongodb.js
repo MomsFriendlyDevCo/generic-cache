@@ -2,7 +2,7 @@ var _ = require('lodash');
 var async = require('async-chainable');
 var mongoose = require('mongoose');
 
-module.exports = function(settings) {
+module.exports = function(settings, cache) {
 	var driver = this;
 
 	driver.schema;
@@ -12,6 +12,8 @@ module.exports = function(settings) {
 		mongodb: {
 			uri: 'mongodb://localhost/mfdc-cache',
 			collection: 'mfdcCaches',
+			serialize: cache.settings.serialize,
+			deserialize: cache.settings.deserialize,
 		},
 	});
 
@@ -60,9 +62,9 @@ module.exports = function(settings) {
 			// Update or create document {{{
 			.then(function(next) {
 				if (this.existing) {
-					this.existing.save({value, $ignoreModified: true}, next);
+					this.existing.save({value: settings.mongodb.serialize(value), $ignoreModified: true}, next);
 				} else {
-					driver.model.create({key, value, expiry, created: new Date()}, next);
+					driver.model.create({key, value: settings.mongodb.serialize(value), expiry, created: new Date()}, next);
 				}
 			})
 			// }}}
@@ -81,7 +83,7 @@ module.exports = function(settings) {
 						cb(null, fallback);
 					});
 				} else { // Value ok
-					cb(null, doc.value);
+					cb(null, settings.mongodb.deserialize(doc.value));
 				}
 			});
 	};
