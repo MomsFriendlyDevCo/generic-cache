@@ -8,6 +8,7 @@ module.exports = function(settings, cache) {
 		redis: {
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
+			retry_strategy: ()=> undefined, // Stop after first try
 		},
 	});
 
