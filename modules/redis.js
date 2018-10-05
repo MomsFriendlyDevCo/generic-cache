@@ -37,7 +37,8 @@ module.exports = function(settings, cache) {
 	driver.get = function(key, fallback, cb) {
 		driver.client.get(key, (err, val) => {
 			if (err) return cb(err);
-			cb(null, val ? driver.settings.redis.deserialize(val) : undefined);
+			val = val ? driver.settings.redis.deserialize(val) : undefined;
+			cb(null, val !== undefined ? val : fallback);
 		});
 	};
 
