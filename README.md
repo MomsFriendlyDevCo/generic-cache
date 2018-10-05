@@ -33,21 +33,22 @@ storage.hash(complexObject, val => ...)
 Supported Caching Drivers
 =========================
 
-| Driver     | Requires         | Maximum object size | List Support | Vacuume Support | Serializer |
-|------------|------------------|---------------------|--------------|-----------------|------------|
-| filesystem | Writable FS area | Infinite            | Yes          | No              | Yes        |
-| memcached  | MemcacheD daemon | 1mb                 | No           | No              | Yes        |
-| memory     | Nothing          | Infinite            | Yes          | Yes             | Not needed |
-| mongodb    | MongoDB daemon   | 16mb                | Yes          | Yes             | Disabled   |
-| redis      | Redis daemon     | 512mb               | Yes          | No              | Yes        |
+| Driver     | Requires         | Maximum object size | List Support | "has()" support | Vacuume Support | Serializer |
+|------------|------------------|---------------------|--------------|-----------------|-----------------|------------|
+| filesystem | Writable FS area | Infinite            | Yes          | No              | No              | Yes        |
+| memcached  | MemcacheD daemon | 1mb                 | No           | No              | No              | Yes        |
+| memory     | Nothing          | Infinite            | Yes          | No              | Yes             | Not needed |
+| mongodb    | MongoDB daemon   | 16mb                | Yes          | No              | Yes             | Disabled   |
+| redis      | Redis daemon     | 512mb               | Yes          | No              | No              | Yes        |
 
 
 **NOTES**:
 
-* By default MemcacheD cahces 1mb slabs, see the documentation of the daemon to increase this
+* By default MemcacheD caches 1mb slabs, see the documentation of the daemon to increase this
 * While memory storage is theoretically infinite Node has a memory limit of 1.4gb by default. See the node CLI for details on how to increase this
 * Some caching systems (notably MemcacheD) automatically vacuume entries
-* For most modules the storage values are encoded / decoded via [marshal](https://github.com/MomsFriendlyDevCo/marshal). This means that complex JS primatives such as Dates, Sets etc. can be stored without issue. This is disabled in the case of MongoDB by default but can be enabled if needed
+* For most modules the storage values are encoded / decoded via [marshal](https://github.com/MomsFriendlyDevCo/marshal). This means that complex JS primitives such as Dates, Sets etc. can be stored without issue. This is disabled in the case of MongoDB by default but can be enabled if needed
+* When `has()` querying is not supported by the module a `get()` operation will be performed and the result mangled into a boolean instead, this ensures that all modules support `has()` at the expense of efficiency
 
 
 API
@@ -115,6 +116,12 @@ cache.get(key, [fallback], callback)
 ------------------------------------
 Fetch a single value and call the callback. If the value does not exist the fallback value will be provided.
 Callback is called as `(err, value)`.
+
+
+cache.has(key, callback)
+------------------------
+Return whether we have the given key but not actually fetch it.
+NOTE: If the individual module does not implement this a simple `get()` will be performed and the return mangled into a boolean. See the compatibility tables at the top of this article to see if 'has' is supported.
 
 
 cache.list(callback)

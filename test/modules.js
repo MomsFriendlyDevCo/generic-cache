@@ -201,6 +201,25 @@ var mlog = require('mocha-logger');
 			});
 		});
 
+		it('to not return it has non-existant values', done => {
+			cache.has('nonExistant', (err, res) => {
+				expect(err).to.not.be.ok;
+				expect(res).to.be.false;
+				done();
+			});
+		});
+
+		it('to correctly return it has set values', done => {
+			cache.set('someValue', 'Hello World', (err, res) => {
+				expect(err).to.not.be.ok;
+				cache.has('someValue', (err, res) => {
+					expect(err).to.not.be.ok;
+					expect(res).to.be.true;
+					done();
+				});
+			});
+		});
+
 		it('should vaccume all expired items', function(done) {
 			if (!cache.can('vacuume')) return this.skip();
 			cache.vacuume(err => {

@@ -178,6 +178,29 @@ function Cache(options, cb) {
 
 
 	/**
+	* Calls the active modules has() function
+	* @param {*} key The key to check, this can be any valid object storage key
+	* @param {function} cb The callback to fire with a boolean indicating that the value exists
+	* @returns {Object} This chainable cache module
+	*/
+	cache.has = argy('scalar function', function(key, cb) {
+		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
+
+		debug('Has', key);
+		if (_.isFunction(cache.activeModule.has)) {
+			cache.activeModule.has(cache.settings.keyMangle(key), cb || _.noop);
+		} else { // Doesn't implement 'has' use get as a quick fix
+			cache.activeModule.get(cache.settings.keyMangle(key), '!!!NONEXISTANT!!!', (err, res) => {
+				if (err) return cb(err);
+				cb(null, res !== '!!!NONEXISTANT!!!');
+			});
+		}
+
+		return cache;
+	});
+
+
+	/**
 	* Release a set key, any subsequent get() call for this key will fail
 	* @param {*} key The key to release, this can be any valid object storage key
 	* @param {function} cb The callback to fire when completed
