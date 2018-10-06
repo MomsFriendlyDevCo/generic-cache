@@ -59,6 +59,12 @@ module.exports = function(settings, cache) {
 		});
 	};
 
+	driver.has = function(key, cb) {
+		driver.client.keys(key, (err, list) => {
+			cb(null, list.length > 0);
+		});
+	};
+
 	driver.destroy = function(cb) {
 		driver.client.quit(cb);
 	};

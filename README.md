@@ -33,13 +33,13 @@ storage.hash(complexObject, val => ...)
 Supported Caching Drivers
 =========================
 
-| Driver     | Requires         | Maximum object size | List Support | "has()" support | Vacuume Support | Serializer |
-|------------|------------------|---------------------|--------------|-----------------|-----------------|------------|
-| filesystem | Writable FS area | Infinite            | Yes          | No              | No              | Yes        |
-| memcached  | MemcacheD daemon | 1mb                 | No           | No              | No              | Yes        |
-| memory     | Nothing          | Infinite            | Yes          | No              | Yes             | Not needed |
-| mongodb    | MongoDB daemon   | 16mb                | Yes          | No              | Yes             | Disabled   |
-| redis      | Redis daemon     | 512mb               | Yes          | No              | No              | Yes        |
+| Driver     | Requires         | Maximum object size | Serializer | list() Support | "has()" support | vacuume() Support |
+|------------|------------------|---------------------|------------|----------------|-----------------|-------------------|
+| filesystem | Writable FS area | Infinite            | Yes        | Yes            | Yes             | No                |
+| memcached  | MemcacheD daemon | 1mb                 | Yes        | No             | No              | No                |
+| memory     | Nothing          | Infinite            | Not needed | Yes            | Yes             | Yes               |
+| mongodb    | MongoDB daemon   | 16mb                | Disabled   | Yes            | Yes             | Yes               |
+| redis      | Redis daemon     | 512mb               | Yes        | Yes            | Yes             | No                |
 
 
 **NOTES**:

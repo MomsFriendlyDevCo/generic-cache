@@ -37,6 +37,10 @@ module.exports = function(settings) {
 		cb();
 	};
 
+	driver.has = function(key, cb) {
+		cb(null, _.has(driver.store, key));
+	};
+
 	driver.list = function(cb) {
 		cb(null, _.map(driver.store, (v, k) => ({
 			id: k,

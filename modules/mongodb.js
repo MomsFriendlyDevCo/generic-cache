@@ -92,6 +92,23 @@ module.exports = function(settings, cache) {
 		driver.model.deleteOne({key}, cb);
 	};
 
+	driver.has = function(key, cb) {
+		driver.model.findOne({key})
+			.select('_id')
+			.lean()
+			.exec((err, doc) => {
+				if (!doc) { // Not found
+					cb(null, false);
+				} else if (doc.expiry && doc.expiry < new Date()) { // Expired
+					driver.unset(key, function() {
+						cb(null, false);
+					});
+				} else { // Value ok
+					cb(null, true);
+				}
+			});
+	};
+
 	driver.list = function(cb) {
 		driver.model.find()
 			.lean()

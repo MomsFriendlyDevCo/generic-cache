@@ -139,6 +139,30 @@ module.exports = function(settings, cache) {
 			.end(cb);
 	};
 
+	driver.has = function(key, cb) {
+		async()
+			.then('path', function(next) {
+				driver.settings.filesystem.path(key, null, null, next);
+			})
+			.then('stats', function(next) {
+				fs.stat(this.path, (err, stats) => {
+					if (err) return next();
+					next(null, stats);
+				});
+			})
+			.then('isValid', function(next) {
+				if (!this.stats) { // No stats - no file to read
+					return next(null, false)
+				} else if (this.stats.mtime < new Date()) { // Modified date is in the past - the file has expired
+					fs.unlink(this.path, err => next(null, false)); // Delete the file then respond that it has expired
+					if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
+				} else {
+					next(null, true);
+				}
+			})
+			.end('isValid', cb);
+	};
+
 	driver.list = function(cb) {
 		async()
 			// Calculate path {{{
