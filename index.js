@@ -162,16 +162,29 @@ function Cache(options, cb) {
 
 	/**
 	* Calls the active modules get() function
-	* @param {*} key The key to retrieve, this can be any valid object storage key
+	* @param {*|array} key The key to retrieve, this can be any valid object storage key, If this is an array an object is returned with a key/value combination
 	* @param {*} [fallback=undefined] The falllback value to return if the storage has expired or is not set
 	* @param {function} cb The callback to fire with the retrieved value
 	* @returns {Object} This chainable cache module
 	*/
-	cache.get = argy('scalar [object|array|scalar] function', function(key, fallback, cb) {
+	cache.get = argy('scalar|array [object|array|scalar] function', function(key, fallback, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
-		debug('Get', key);
-		cache.activeModule.get(cache.settings.keyMangle(key), fallback, cb || _.noop);
+		if (_.isArray(key)) {
+			async()
+				.set('result', {})
+				.forEach(key, function(next, key) {
+					cache.activeModule.get(cache.settings.keyMangle(key), fallback, (err, res) => {
+						if (err) return next(err);
+						if (res) this.result[key] = res;
+						next();
+					});
+				})
+				.end('result', cb);
+		} else {
+			debug('Get', key);
+			cache.activeModule.get(cache.settings.keyMangle(key), fallback, cb || _.noop);
+		}
 
 		return cache;
 	});
@@ -202,15 +215,19 @@ function Cache(options, cb) {
 
 	/**
 	* Release a set key, any subsequent get() call for this key will fail
-	* @param {*} key The key to release, this can be any valid object storage key
+	* @param {*|array} key The key or array of keys to release, this can be any valid object storage key
 	* @param {function} cb The callback to fire when completed
 	* @returns {Object} This chainable cache module
 	*/
-	cache.unset = argy('scalar [function]', function(key, cb) {
+	cache.unset = argy('scalar|array [function]', function(keys, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
-		debug('Unset', key);
-		cache.activeModule.unset(cache.settings.keyMangle(key), cb || _.noop);
+		async()
+			.forEach(_.castArray(keys), function(next, key) {
+				debug('Unset', key);
+				cache.activeModule.unset(cache.settings.keyMangle(key), next);
+			})
+			.end(cb);
 
 		return cache;
 	});

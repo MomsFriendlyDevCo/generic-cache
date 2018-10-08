@@ -112,10 +112,16 @@ cache.set(Object, [expiry], [callback]) or cache.set(key, value, [expiry], [call
 Set a collection of keys or a single key with the optional expiry.
 
 
-cache.get(key, [fallback], callback)
+cache.get(key|keys, [fallback], callback)
 ------------------------------------
 Fetch a single value and call the callback. If the value does not exist the fallback value will be provided.
+If called with an array of keys the result is an object with a key/value combination.
 Callback is called as `(err, value)`.
+
+
+cache.unset(key|keys, callback)
+------------------------------------
+Release a single or array of keys.
 
 
 cache.has(key, callback)

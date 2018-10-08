@@ -1,6 +1,6 @@
 {
   "name": "@momsfriendlydevco/cache",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Generic caching module (MemcacheD, Mongo, in-memory)",
   "main": "index.js",
   "directories": {
@@ -34,13 +34,13 @@
     "mkdirp": "^0.5.1"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "mocha": "^5.2.0",
     "mocha-logger": "^1.0.6"
   },
   "optionalDependencies": {
     "memcached": "^2.2.2",
-    "mongoose": "^5.2.17",
+    "mongoose": "^5.3.2",
     "redis": "^2.8.0"
   }
 }

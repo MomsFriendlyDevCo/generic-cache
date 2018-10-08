@@ -149,11 +149,30 @@ var mlog = require('mocha-logger');
 			});
 		});
 
-		it('should unset values', () => {
-			cache.unset('foo', () => {
-				cache.get('foo', (err, val) => {
+		it('should unset a single value', done => {
+			cache.set('unFoo', err => {
+				expect(err).to.not.be.ok;
+				cache.unset('foo', err => {
 					expect(err).to.not.be.ok;
-					expect(val).to.be.undefined;
+					cache.get('foo', (err, val) => {
+						expect(err).to.not.be.ok;
+						expect(val).to.be.undefined;
+						done();
+					});
+				});
+			});
+		});
+
+		it('should unset multiple values', done => {
+			cache.set({unFoo: 'Foo!', unBar: 'Bar!', unBaz: 'Baz!'}, err => {
+				expect(err).to.not.be.ok;
+				cache.unset(['unFoo', 'unBar', 'unBaz'], err => {
+					expect(err).to.not.be.ok;
+					cache.get(['unFoo', 'unBar', 'unBaz'], (err, vals) => {
+						expect(err).to.not.be.ok;
+						expect(vals).to.be.deep.equal({});
+						done();
+					});
 				});
 			});
 		});
