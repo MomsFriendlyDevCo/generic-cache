@@ -1,7 +1,7 @@
 var Cache = require('..');
 var expect = require('chai').expect;
 
-describe('Hashing', ()=> {
+describe('hash()', ()=> {
 
 	var cache;
 	before(done => {

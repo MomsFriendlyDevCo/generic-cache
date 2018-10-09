@@ -25,8 +25,8 @@ module.exports = function(settings, cache) {
 		if (!expiry) {
 			driver.client.set(key, driver.settings.redis.serialize(val), err => cb(err, val));
 		} else {
-			var expiryVal = expiry - Date.now();
-			if (!expiryVal) { // Expires immediately - don't bother to store - unset instead
+			var expiryVal = expiry.getTime() - Date.now();
+			if (expiryVal <= 10) { // Expires immediately - don't bother to store - unset instead
 				driver.unset(key, ()=> cb(null, val));
 			} else {
 				driver.client.set(key, driver.settings.redis.serialize(val), 'PX', expiryVal, err => cb(err, val));

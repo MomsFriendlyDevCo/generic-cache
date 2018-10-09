@@ -5,6 +5,7 @@ var crypto = require('crypto');
 var debug = require('debug')('cache');
 var events = require('events');
 var marshal = require('@momsfriendlydevco/marshal');
+var timestring = require('timestring');
 var util = require('util');
 
 /**
@@ -123,20 +124,21 @@ function Cache(options, cb) {
 	* Calls the active modules set() function
 	* @param {*} key The key to set, this can be any valid object storage key. If this is an object all keys will be set in parallel
 	* @param {*} [val] The value to set, this can be any marshallable valid JS object, can be omitted if key is an object
-	* @param {date} [expiry] The expiry of the value, after this date the storage will reset to undefined
+	* @param {date|number|string} [expiry] The expiry of the value, after this date the storage will reset to undefined. Any value passed is run via cache.convertDateRelative() first
 	* @param {function} [cb] The callback to fire when the value was stored. Called as (err, val)
 	* @returns {Object} This chainable cache module
 	*/
-	cache.set = argy('object|scalar [object|array|scalar] [date] [function]', function(key, val, expiry, cb) {
+	cache.set = argy('object|scalar [object|array|scalar] [date|number|string] [function]', function(key, val, expiry, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		if (argy.isType(key, 'object')) {
-			debug('Set Object' + (expiry ? ` (Expiry ${expiry})` : '') + ':');
 			async()
 				.forEach(key, function(next, val, key) {
 					debug('> Set', key);
 					cache.flushing++;
-					cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, err => {
+					var expiryDate = cache.convertDateRelative(expiry);
+					debug('Set Object' + (expiry ? ` (Expiry ${expiryDate})` : '') + ':');
+					cache.activeModule.set(cache.settings.keyMangle(key), val, expiryDate, err => {
 						cache.flushing--;
 						next(err);
 					});
@@ -148,9 +150,10 @@ function Cache(options, cb) {
 					}
 				})
 		} else {
-			debug('Set ' + key  + (expiry ? ` (Expiry ${expiry})` : ''));
 			cache.flushing++;
-			cache.activeModule.set(cache.settings.keyMangle(key), val, expiry, err => {
+			var expiryDate = cache.convertDateRelative(expiry);
+			debug('Set ' + key  + (expiry ? ` (Expiry ${expiryDate})` : ''));
+			cache.activeModule.set(cache.settings.keyMangle(key), val, expiryDate, err => {
 				cache.flushing--;
 				if (cb) cb(err);
 			});
@@ -369,6 +372,22 @@ function Cache(options, cb) {
 			.update(argy.isType(val, 'scalar') ? val : JSON.stringify(val))
 			.digest('hex')
 	};
+
+
+	/**
+	* Convert an input value into a Date object
+	* This function can take dates, millisecond offsets, timestring() strings or moment objects
+	* @param {number|string|Date|Moment} val The input value to convert
+	* @returns {Date} A Date object
+	*/
+	cache.convertDateRelative = val =>
+		!val ? undefined // Invalid object?
+			: _.isDate(val) ? val // Already a date?
+			: val.constructor.name == 'Moment' ? val.toDate() // Is a Moment object?
+			: isFinite(val) ? new Date(Date.now() + Number(val)) // Looks like a number?
+			: typeof val == 'string' ? new Date(Date.now() + timestring(val)) // Relative time string
+			: undefined;
+
 
 	cache.options(options);
 

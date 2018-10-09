@@ -110,6 +110,7 @@ This function is automatically executed in the constructor if `cache.settings.in
 cache.set(Object, [expiry], [callback]) or cache.set(key, value, [expiry], [callback])
 --------------------------------------------------------------------------------------
 Set a collection of keys or a single key with the optional expiry.
+The expiry value can be a date, millisecond offset, moment object or any valid [timestring](https://www.npmjs.com/package/timestring) string.
 
 
 cache.get(key|keys, [fallback], callback)

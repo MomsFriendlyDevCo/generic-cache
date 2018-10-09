@@ -206,7 +206,7 @@ var mlog = require('mocha-logger');
 		});
 
 		it('should expire an entry within 1.5s', done => {
-			cache.set('flarp', 'Flarp!', new Date(Date.now() + 1500), err => {
+			cache.set('flarp', 'Flarp!', 1500, err => {
 				expect(err).to.not.be.ok;
 
 				setTimeout(()=> {
@@ -219,6 +219,7 @@ var mlog = require('mocha-logger');
 				}, 1600);
 			});
 		});
+
 
 		it('to not return it has non-existant values', done => {
 			cache.has('nonExistant', (err, res) => {
@@ -246,7 +247,7 @@ var mlog = require('mocha-logger');
 				cache.list((err, list) => {
 					expect(err).to.not.be.ok;
 					expect(list).to.be.an('array');
-					expect(list).to.have.length(2); // Two items should still be around, not having expired
+					expect(list).to.have.length(3); // Three items should still be around, not having expired
 					done();
 				});
 			});
