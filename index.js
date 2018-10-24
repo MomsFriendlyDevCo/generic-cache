@@ -35,8 +35,8 @@ function Cache(options, cb) {
 		keyMangle: key => key,
 		keyQuery: q => /./,
 		modules: ['memory'],
-		serialize: marshal.serialize,
-		deserialize: marshal.deserialize,
+		serialize: v => marshal.serialize(v, {circular: false}),
+		deserialize: v => marshal.deserialize(v, {circular: false}),
 	};
 
 

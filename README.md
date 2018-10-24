@@ -92,6 +92,7 @@ Valid options are:
 **NOTES**:
 
 * All modules expose their own `serialize` / `deserialize` properties which defaults to the main properties by default. These are omitted from the above table for brevity
+* The default setup for the serialize property assumes no circular references, override this if you really do need to store them - but at a major performance hit
 * The MongoDB module does *not* serialize or deserialize by default in order to use its own storage format, set the `serialize` / `deserialize` properties to the main cache object to enable this behaviour
 
 
