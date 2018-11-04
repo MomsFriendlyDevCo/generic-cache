@@ -66,13 +66,13 @@ function Cache(options, cb) {
 	/**
 	* Boot the cache object (automaticaly called if cache.settings.init
 	* @param {Object} [options] Options to load when booting - this is merged with cache.settings before boot
-	* @param {function} cb Callback function to call when finsihed. Called as (err)
+	* @param {function} [cb] Optional callback function to call when finsihed. Called as (err)
 	* @returns {Cache} This chainable object
 	* @emits loadedMod Emitted when a module has been successfully loaded
 	* @emits noMods Emitted when no modules are available to load and we cannot continue - an error is also raised via the callback
 	* @emits cantLoad Emitted as (mod) when a named module cannot be loaded
 	*/
-	cache.init = argy('[function]', function(cb) {
+	cache.init = argy('[function]', cb => {
 		async()
 			.limit(1)
 			// Try all selected modules in sequence until one says it can load {{{
@@ -113,7 +113,7 @@ function Cache(options, cb) {
 			})
 			// }}}
 			// End {{{
-			.end(cb)
+			.promise(cb)
 			// }}}
 
 		return cache;
@@ -125,14 +125,14 @@ function Cache(options, cb) {
 	* @param {*} key The key to set, this can be any valid object storage key. If this is an object all keys will be set in parallel
 	* @param {*} [val] The value to set, this can be any marshallable valid JS object, can be omitted if key is an object
 	* @param {date|number|string} [expiry] The expiry of the value, after this date the storage will reset to undefined. Any value passed is run via cache.convertDateRelative() first
-	* @param {function} [cb] The callback to fire when the value was stored. Called as (err, val)
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire when the value was stored. Called as (err, valueSet)
+	* @returns {Promise} A promise representing the set action. Resolved as `(valueSet)`
 	*/
 	cache.set = argy('object|scalar [object|array|scalar] [date|number|string] [function]', function(key, val, expiry, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		if (argy.isType(key, 'object')) {
-			async()
+			return async()
 				.forEach(key, function(next, val, key) {
 					debug('> Set', key);
 					cache.flushing++;
@@ -143,23 +143,16 @@ function Cache(options, cb) {
 						next(err);
 					});
 				})
-				.end(function(err) {
-					if (argy.isType(cb, 'function')) {
-						if (err) return cb(err);
-						cb(null, key);
-					}
-				})
+				.promise('key', cb)
 		} else {
 			cache.flushing++;
 			var expiryDate = cache.convertDateRelative(expiry);
 			debug('Set ' + key  + (expiry ? ` (Expiry ${expiryDate})` : ''));
-			cache.activeModule.set(cache.settings.keyMangle(key), val, expiryDate, err => {
-				cache.flushing--;
-				if (cb) cb(err);
-			});
+			return async()
+				.then(next => cache.activeModule.set(cache.settings.keyMangle(key), val, expiryDate, next))
+				.then(()=> cache.flushing--)
+				.promise(cb);
 		}
-
-		return cache;
 	});
 
 
@@ -167,14 +160,14 @@ function Cache(options, cb) {
 	* Calls the active modules get() function
 	* @param {*|array} key The key to retrieve, this can be any valid object storage key, If this is an array an object is returned with a key/value combination
 	* @param {*} [fallback=undefined] The falllback value to return if the storage has expired or is not set
-	* @param {function} cb The callback to fire with the retrieved value
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire with the retrieved value
+	* @returns {Promise} Promise representing the retrieved value
 	*/
-	cache.get = argy('scalar|array [object|array|scalar] function', function(key, fallback, cb) {
+	cache.get = argy('scalar|array [object|array|scalar] [function]', function(key, fallback, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		if (_.isArray(key)) {
-			async()
+			return async()
 				.set('result', {})
 				.forEach(key, function(next, key) {
 					cache.activeModule.get(cache.settings.keyMangle(key), fallback, (err, res) => {
@@ -183,56 +176,54 @@ function Cache(options, cb) {
 						next();
 					});
 				})
-				.end('result', cb);
+				.promise('result', cb);
 		} else {
 			debug('Get', key);
-			cache.activeModule.get(cache.settings.keyMangle(key), fallback, cb || _.noop);
+			return async()
+				.then('value', next => cache.activeModule.get(cache.settings.keyMangle(key), fallback, next))
+				.promise('value', cb);
 		}
-
-		return cache;
 	});
 
 
 	/**
 	* Calls the active modules has() function
 	* @param {*} key The key to check, this can be any valid object storage key
-	* @param {function} cb The callback to fire with a boolean indicating that the value exists
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire with a boolean indicating that the value exists
+	* @returns {Promise} A promise representing whether the key exists
 	*/
-	cache.has = argy('scalar function', function(key, cb) {
+	cache.has = argy('scalar [function]', function(key, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		debug('Has', key);
 		if (_.isFunction(cache.activeModule.has)) {
-			cache.activeModule.has(cache.settings.keyMangle(key), cb || _.noop);
+			return async()
+				.then('hasValue', next => cache.activeModule.has(cache.settings.keyMangle(key), next))
+				.promise('hasValue', cb);
 		} else { // Doesn't implement 'has' use get as a quick fix
-			cache.activeModule.get(cache.settings.keyMangle(key), '!!!NONEXISTANT!!!', (err, res) => {
-				if (err) return cb(err);
-				cb(null, res !== '!!!NONEXISTANT!!!');
-			});
+			return async()
+				.then('hasValue', next => cache.activeModule.get(cache.settings.keyMangle(key), '!!!NONEXISTANT!!!', next))
+				.then('hasValue', ()=> res !== '!!!NONEXISTANT!!!')
+				.promise('hasValue', cb);
 		}
-
-		return cache;
 	});
 
 
 	/**
 	* Release a set key, any subsequent get() call for this key will fail
 	* @param {*|array} key The key or array of keys to release, this can be any valid object storage key
-	* @param {function} cb The callback to fire when completed
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire when completed
+	* @returns {Promise}
 	*/
 	cache.unset = argy('scalar|array [function]', function(keys, cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
-		async()
+		return async()
 			.forEach(_.castArray(keys), function(next, key) {
 				debug('Unset', key);
 				cache.activeModule.unset(cache.settings.keyMangle(key), next);
 			})
-			.end(cb);
-
-		return cache;
+			.promise(cb);
 	});
 
 
@@ -240,16 +231,16 @@ function Cache(options, cb) {
 	* Return a list of current cache values
 	* Only some drivers may implement this function
 	* Each return item is expected to have at least 'id' with optional keys 'expiry', 'created'
-	* @param {function} cb The callback to fire when completed. Called as (err, items)
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire when completed. Called as (err, items)
+	* @returns {Promise} A promise representing the cached items
 	*/
 	cache.list = argy('[function]', function(cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		debug('List');
-		cache.activeModule.list(cb || _.noop);
-
-		return cache;
+		return async()
+			.then('items', next => cache.activeModule.list(next))
+			.promise('items', cb);
 	});
 
 
@@ -257,8 +248,8 @@ function Cache(options, cb) {
 	* Attempt to clean up any remaining items
 	* Only some drivers may implement this function
 	* NOTE: If the driver does not implement BUT the driver has a list function that returns expiry data a simple loop + expiry check + unset worker will be implemented instead
-	* @param {function} cb The callback to fire when completed
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire when completed
+	* @returns {Promise}
 	*/
 	cache.vacuume = argy('[function]', function(cb) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
@@ -266,10 +257,12 @@ function Cache(options, cb) {
 		debug('Vacuume');
 
 		if (cache.activeModule.vacuume) { // Driver implments its own function
-			cache.activeModule.vacuume(cb);
+			return async()
+				.then(next => cache.activeModule.vacuume(next))
+				.promise(cb);
 		} else if (cache.activeModule.list && cache.activeModule.unset) { // Drive implements a list which we can use instead
 			var now = new Date();
-			async()
+			return async()
 				.then('items', next => cache.activeModule.list(next))
 				.forEach('items', (next, item) => {
 					if (item.id && item.expiry && item.expiry < now) {
@@ -278,12 +271,10 @@ function Cache(options, cb) {
 						next();
 					}
 				})
-				.end(cb);
+				.promise(cb);
 		} else {
-			throw new Error('Vacuume is not supported by the selected cache module');
+			return Promise.reject('Vacuume is not supported by the selected cache module');
 		}
-
-		return cache;
 	});
 
 
@@ -291,22 +282,24 @@ function Cache(options, cb) {
 	* Attempt to erase ALL cache contents
 	* Only some drivers may implement this function
 	* NOTE: If the driver does not implement BUT the driver has a list function that returns expiry data a simple loop + expiry check + unset worker will be implemented instead
-	* @param {function} cb The callback to fire when completed
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire when completed
+	* @returns {Promise} This chainable cache module
 	*/
 	cache.clear = argy('[function]', function(cb) {
-		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
+		if (!cache.activeModule) Promise.reject('No cache module loaded. Use cache.init() first');
 		debug('Clear');
 
 		if (cache.activeModule.clear) { // Driver implments its own function
-			cache.activeModule.clear(cb);
+			return async()
+				.then(next => cache.activeModule.clear(next))
+				.promise(cb);
 		} else if (cache.activeModule.list && cache.activeModule.unset) { // Drive implements a list which we can use instead
-			async()
+			return async()
 				.then('items', next => cache.activeModule.list(next))
 				.forEach('items', (next, item) => cache.activeModule.unset(item.id, next))
-				.end(cb);
+				.promise(cb);
 		} else {
-			throw new Error('Clear is not supported by the selected cache module');
+			return Promise.reject('Clear is not supported by the selected cache module');
 		}
 	});
 
@@ -334,31 +327,32 @@ function Cache(options, cb) {
 	/**
 	* Politely close all driver resource handles
 	* NOTE: The destroy function will wait until all set() operations complete before calling the callback
-	* @param {function} cb The callback to fire when completed
-	* @returns {Object} This chainable cache module
+	* @param {function} [cb] The callback to fire when completed
+	* @returns {Promise}
 	*/
 	cache.destroy = argy('[function]', function(cb) {
 		debug('Destroy');
 
-		(cache.activeModule && cache.activeModule.destroy ? cache.activeModule.destroy : _.noop)(()=> {
-			debug('Destroy - modules terminated');
+		return new Promise(resolve => {
+			(cache.activeModule && cache.activeModule.destroy ? cache.activeModule.destroy : _.noop)(()=> {
+				debug('Destroy - modules terminated');
 
-			var dieAttempt = 0;
-			var dieWait = 100;
-			var tryDying = ()=> {
-				if (cache.flushing > 0) {
-					debug(`Destory - still flushing. Attempt ${dieAttempt++}, will try again in ${dieWait}ms`);
-					dieWait *= 2; // Increase wait backoff
-					setTimeout(tryDying, dieWait);
-				} else if (cb) {
-					cb();
-				}
-			};
+				var dieAttempt = 0;
+				var dieWait = 100;
+				var tryDying = ()=> {
+					if (cache.flushing > 0) {
+						debug(`Destory - still flushing. Attempt ${dieAttempt++}, will try again in ${dieWait}ms`);
+						dieWait *= 2; // Increase wait backoff
+						setTimeout(tryDying, dieWait);
+					} else {
+						if (cb) cb();
+						resolve();
+					}
+				};
 
-			tryDying();
+				tryDying();
+			});
 		});
-
-		return cache;
 	});
 
 

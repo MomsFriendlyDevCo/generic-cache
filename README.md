@@ -29,6 +29,8 @@ storage.vacuume(err => ...)
 storage.hash(complexObject, val => ...)
 ```
 
+All methods may take a callback or return a promise.
+
 
 Supported Caching Drivers
 =========================
@@ -53,6 +55,9 @@ Supported Caching Drivers
 
 API
 ===
+
+**NOTE:** In all cases where `[callback]` is specified in the syntax, this module supports either callbacks or promise returns.
+
 
 Cache([options]) (constructor)
 ------------------------------
@@ -114,20 +119,20 @@ Set a collection of keys or a single key with the optional expiry.
 The expiry value can be a date, millisecond offset, moment object or any valid [timestring](https://www.npmjs.com/package/timestring) string.
 
 
-cache.get(key|keys, [fallback], callback)
-------------------------------------
+cache.get(key|keys, [fallback], [callback])
+-------------------------------------------
 Fetch a single value and call the callback. If the value does not exist the fallback value will be provided.
 If called with an array of keys the result is an object with a key/value combination.
 Callback is called as `(err, value)`.
 
 
-cache.unset(key|keys, callback)
-------------------------------------
+cache.unset(key|keys, [callback])
+---------------------------------
 Release a single or array of keys.
 
 
-cache.has(key, callback)
-------------------------
+cache.has(key, [callback])
+--------------------------
 Return whether we have the given key but not actually fetch it.
 NOTE: If the individual module does not implement this a simple `get()` will be performed and the return mangled into a boolean. See the compatibility tables at the top of this article to see if 'has' is supported.
 
@@ -148,7 +153,7 @@ This is only supported by some modules.
 
 
 cache.destroy([callback])
----------------
+-------------------------
 Politely close all driver resource handles before shutting down.
 This function waits for all set operations to complete - even if you didn't attach a callback.
 
