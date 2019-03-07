@@ -202,8 +202,8 @@ function Cache(options, cb) {
 				.promise('hasValue', cb);
 		} else { // Doesn't implement 'has' use get as a quick fix
 			return async()
-				.then('hasValue', next => cache.activeModule.get(cache.settings.keyMangle(key), '!!!NONEXISTANT!!!', next))
-				.then('hasValue', ()=> res !== '!!!NONEXISTANT!!!')
+				.then('value', next => cache.get(key, '!!!NONEXISTANT!!!', next))
+				.then('hasValue', function(next) { next(null, this.value !== '!!!NONEXISTANT!!!') })
 				.promise('hasValue', cb);
 		}
 	});
