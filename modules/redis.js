@@ -42,6 +42,13 @@ module.exports = function(settings, cache) {
 		});
 	};
 
+	driver.size = function(key, cb) {
+		driver.client.strlen(key, (err, val) => {
+			if (err) return cb(err);
+			cb(null, val);
+		});
+	};
+
 	driver.unset = function(key, cb) {
 		driver.client.del(key, cb);
 	};

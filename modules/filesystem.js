@@ -159,6 +159,30 @@ module.exports = function(settings, cache) {
 			.end('isValid', cb);
 	};
 
+	driver.size = function(key, cb) {
+		async()
+			.then('path', function(next) {
+				driver.settings.filesystem.path(key, null, null, next);
+			})
+			.then('stats', function(next) {
+				fs.stat(this.path, (err, stats) => {
+					if (err) return next();
+					next(null, stats);
+				});
+			})
+			.then('size', function(next) {
+				if (!this.stats) { // No stats - no file to read
+					return next(null, undefined)
+				} else if (this.stats.mtime < new Date()) { // Modified date is in the past - the file has expired
+					fs.unlink(this.path, err => next(null, undefined)); // Delete the file then respond that it has expired
+					if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
+				} else {
+					next(null, this.stats.size);
+				}
+			})
+			.end('size', cb);
+	};
+
 	driver.list = function(cb) {
 		async()
 			// Calculate path {{{

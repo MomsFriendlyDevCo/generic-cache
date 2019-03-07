@@ -210,6 +210,24 @@ function Cache(options, cb) {
 
 
 	/**
+	* Calls the active modules size() function
+	* @param {*} key The key to check, this can be any valid object storage key
+	* @param {function} [cb] The callback to fire with a boolean indicating that the value exists
+	* @returns {Promise} A promise representing whether the size in bytes or undefined
+	*/
+	cache.size = argy('scalar [function]', function(key, cb) {
+		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
+
+		debug('Size', key);
+		if (!_.isFunction(cache.activeModule.size)) return Promise.reject('Size is not supported by the selected cache module');
+
+		return async()
+			.then('sizeValue', next => cache.activeModule.size(cache.settings.keyMangle(key), next))
+			.promise('sizeValue', cb);
+	});
+
+
+	/**
 	* Release a set key, any subsequent get() call for this key will fail
 	* @param {*|array} key The key or array of keys to release, this can be any valid object storage key
 	* @param {function} [cb] The callback to fire when completed
@@ -260,7 +278,7 @@ function Cache(options, cb) {
 			return async()
 				.then(next => cache.activeModule.vacuume(next))
 				.promise(cb);
-		} else if (cache.activeModule.list && cache.activeModule.unset) { // Drive implements a list which we can use instead
+		} else if (cache.activeModule.list && cache.activeModule.unset) { // Driver implements a list which we can use instead
 			var now = new Date();
 			return async()
 				.then('items', next => cache.activeModule.list(next))

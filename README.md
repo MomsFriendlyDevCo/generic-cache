@@ -35,13 +35,13 @@ All methods may take a callback or return a promise.
 Supported Caching Drivers
 =========================
 
-| Driver     | Requires         | Maximum object size | Serializer | list() Support | "has()" support | vacuume() Support |
-|------------|------------------|---------------------|------------|----------------|-----------------|-------------------|
-| filesystem | Writable FS area | Infinite            | Yes        | Yes            | Yes             | No                |
-| memcached  | MemcacheD daemon | 1mb                 | Yes        | No             | No              | No                |
-| memory     | Nothing          | Infinite            | Not needed | Yes            | Yes             | Yes               |
-| mongodb    | MongoDB daemon   | 16mb                | Disabled   | Yes            | Yes             | Yes               |
-| redis      | Redis daemon     | 512mb               | Yes        | Yes            | Yes             | No                |
+| Driver     | Requires         | Maximum object size | Serializer | list() Support | has() support | size() support | vacuume() Support |
+|------------|------------------|---------------------|------------|----------------|---------------|----------------|-------------------|
+| filesystem | Writable FS area | Infinite            | Yes        | Yes            | Yes           | Yes            |                   |
+| memcached  | MemcacheD daemon | 1mb                 | Yes        |                |               |                |                   |
+| memory     | Nothing          | Infinite            | Not needed | Yes            | Yes           | Yes            | Yes               |
+| mongodb    | MongoDB daemon   | 16mb                | Disabled   | Yes            | Yes           |                | Yes               |
+| redis      | Redis daemon     | 512mb               | Yes        | Yes            | Yes           | Yes            |                   |
 
 
 **NOTES**:
@@ -135,6 +135,11 @@ cache.has(key, [callback])
 --------------------------
 Return whether we have the given key but not actually fetch it.
 NOTE: If the individual module does not implement this a simple `get()` will be performed and the return mangled into a boolean. See the compatibility tables at the top of this article to see if 'has' is supported.
+
+
+cache.size(key, [callback])
+---------------------------
+Return whether the approximate size in bytes of a cache object.
 
 
 cache.list(callback)

@@ -1,4 +1,5 @@
 var _ = require('lodash');
+var marshal = require('@momsfriendlydevco/marshal');
 
 module.exports = function(settings) {
 	var driver = this;
@@ -30,6 +31,12 @@ module.exports = function(settings) {
 		} else { // Not found anyway
 			cb(null, fallback || undefined);
 		}
+	};
+
+	driver.size = function(key, cb) {
+		var existing = driver.store[key];
+		if (!existing) return cb(null, undefined);
+		cb(null, marshal.serialize(existing.value).length);
 	};
 
 	driver.unset = function(key, cb) {

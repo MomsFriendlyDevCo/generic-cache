@@ -38,6 +38,15 @@ var mlog = require('mocha-logger');
 			cache.set('foo', 'Foo', done);
 		});
 
+		it('should query the size of simple key/vals', function(done) {
+			if (!cache.can('size')) return this.skip();
+			cache.size('foo', (err, val) => {
+				expect(err).to.not.be.ok;
+				expect(val).to.be.at.least(5);
+				done();
+			});
+		});
+
 		it('should store simple key/vals (as object)', done => {
 			cache.set({
 				bar: 'Bar',
@@ -127,10 +136,14 @@ var mlog = require('mocha-logger');
 
 			cache.set('testNested', sampleObject, err => {
 				if (err) return done(err);
-				cache.get('testNested', (err, val) => {
-					if (err) return done(err);
-					expect(val).to.deep.equal(sampleObject);
-					cache.unset('testNested', ()=> done());
+				cache[cache.can('size') ? 'size' : 'get']('testNested', (err, val) => {
+					expect(err).to.not.be.ok;
+					if (cache.can('size')) expect(val).to.be.at.least(800);
+					cache.get('testNested', (err, val) => {
+						if (err) return done(err);
+						expect(val).to.deep.equal(sampleObject);
+						cache.unset('testNested', ()=> done());
+					});
 				});
 			});
 		});
@@ -221,7 +234,7 @@ var mlog = require('mocha-logger');
 		});
 
 
-		it('to not return it has non-existant values', done => {
+		it('to not return non-existant values', function(done) {
 			cache.has('nonExistant', (err, res) => {
 				expect(err).to.not.be.ok;
 				expect(res).to.be.false;
