@@ -333,26 +333,28 @@ function Cache(options, cb) {
 	cache.destroy = argy('[function]', function(cb) {
 		debug('Destroy');
 
-		return new Promise(resolve => {
-			(cache.activeModule && cache.activeModule.destroy ? cache.activeModule.destroy : _.noop)(()=> {
-				debug('Destroy - modules terminated');
+		return async()
+			.then(function(next) {
+				(cache.activeModule && cache.activeModule.destroy ? cache.activeModule.destroy : _.noop)(()=> {
+					debug('Destroy - modules terminated');
 
-				var dieAttempt = 0;
-				var dieWait = 100;
-				var tryDying = ()=> {
-					if (cache.flushing > 0) {
-						debug(`Destory - still flushing. Attempt ${dieAttempt++}, will try again in ${dieWait}ms`);
-						dieWait *= 2; // Increase wait backoff
-						setTimeout(tryDying, dieWait);
-					} else {
-						if (cb) cb();
-						resolve();
-					}
-				};
+					var dieAttempt = 0;
+					var dieWait = 100;
+					var tryDying = ()=> {
+						if (cache.flushing > 0) {
+							debug(`Destory - still flushing. Attempt ${dieAttempt++}, will try again in ${dieWait}ms`);
+							dieWait *= 2; // Increase wait backoff
+							setTimeout(tryDying, dieWait);
+						} else {
+							if (cb) cb();
+							next();
+						}
+					};
 
-				tryDying();
-			});
-		});
+					tryDying();
+				});
+			})
+			.promise(cb);
 	});
 
 

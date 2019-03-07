@@ -32,7 +32,7 @@ var mlog = require('mocha-logger');
 			});
 		});
 
-		after(done => cache.destroy(done));
+		after(()=> cache.destroy());
 
 		it('should store simple key/vals (as single setter)', done => {
 			cache.set('foo', 'Foo', done);
