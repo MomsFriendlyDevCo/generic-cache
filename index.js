@@ -67,12 +67,12 @@ function Cache(options, cb) {
 	* Boot the cache object (automaticaly called if cache.settings.init
 	* @param {Object} [options] Options to load when booting - this is merged with cache.settings before boot
 	* @param {function} [cb] Optional callback function to call when finsihed. Called as (err)
-	* @returns {Cache} This chainable object
+	* @returns {Promise} A promise which will resolve when the startup process completes
 	* @emits loadedMod Emitted when a module has been successfully loaded
 	* @emits noMods Emitted when no modules are available to load and we cannot continue - an error is also raised via the callback
 	* @emits cantLoad Emitted as (mod) when a named module cannot be loaded
 	*/
-	cache.init = argy('[function]', cb => {
+	cache.init = argy('[function]', cb =>
 		async()
 			.limit(1)
 			// Try all selected modules in sequence until one says it can load {{{
@@ -115,9 +115,7 @@ function Cache(options, cb) {
 			// End {{{
 			.promise(cb)
 			// }}}
-
-		return cache;
-	});
+	);
 
 
 	/**

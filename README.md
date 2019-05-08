@@ -63,6 +63,8 @@ Cache([options]) (constructor)
 ------------------------------
 Create a new cache handler and populate its default options.
 
+Note that `cache.init()` needs to be called and needs to complete before this module is usable.
+
 
 cache.options(Object) or cache.options(key, val)
 ------------------------------------------------
@@ -111,12 +113,14 @@ cache.init([callback])
 ----------------------
 Initialize the cache handler and attempt to load the modules in preference order.
 This function is automatically executed in the constructor if `cache.settings.init` is truthy.
+This function returns a promise.
 
 
 cache.set(Object, [expiry], [callback]) or cache.set(key, value, [expiry], [callback])
 --------------------------------------------------------------------------------------
 Set a collection of keys or a single key with the optional expiry.
 The expiry value can be a date, millisecond offset, moment object or any valid [timestring](https://www.npmjs.com/package/timestring) string.
+This function returns a promise.
 
 
 cache.get(key|keys, [fallback], [callback])
@@ -124,28 +128,33 @@ cache.get(key|keys, [fallback], [callback])
 Fetch a single value and call the callback. If the value does not exist the fallback value will be provided.
 If called with an array of keys the result is an object with a key/value combination.
 Callback is called as `(err, value)`.
+This function returns a promise.
 
 
 cache.unset(key|keys, [callback])
 ---------------------------------
 Release a single or array of keys.
+This function returns a promise.
 
 
 cache.has(key, [callback])
 --------------------------
 Return whether we have the given key but not actually fetch it.
 NOTE: If the individual module does not implement this a simple `get()` will be performed and the return mangled into a boolean. See the compatibility tables at the top of this article to see if 'has' is supported.
+This function returns a promise.
 
 
 cache.size(key, [callback])
 ---------------------------
 Return whether the approximate size in bytes of a cache object.
+This function returns a promise.
 
 
 cache.list(callback)
 --------------------
 Attempt to return a list of known cache contents.
 Callback is called as `(err, items)`.
+This function returns a promise.
 
 Each item will have at minimum a `id` and `created` value. All other values (e.g. `expiry`) depend on the cache driver being used.
 
@@ -155,12 +164,14 @@ cache.vacuume([callback])
 -------------------------
 Attempt to clean up any left over or expired cache entries.
 This is only supported by some modules.
+This function returns a promise.
 
 
 cache.destroy([callback])
 -------------------------
 Politely close all driver resource handles before shutting down.
 This function waits for all set operations to complete - even if you didn't attach a callback.
+This function returns a promise.
 
 
 Debugging

@@ -14,14 +14,16 @@ var mlog = require('mocha-logger');
 	describe(`${mod} module`, function() {
 
 		let cache;
-		before(function(done) {
+		before(()=> {
 			this.timeout(5000);
-			cache = new Cache({modules: mod, keyMangle: key => 'blah' + key}, done)
+			cache = new Cache({modules: mod, keyMangle: key => 'blah' + key})
 				.on('loadedMod', mod => mlog.log('Loaded mod', mod))
 				.on('noMods', ()=> {
 					mlog.log('Module unavailable');
 					this.skip();
 				})
+
+			return cache.init();
 		});
 
 		before('clear out existing items', function(done) {

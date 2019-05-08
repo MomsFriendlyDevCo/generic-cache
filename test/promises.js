@@ -4,9 +4,10 @@ var expect = require('chai').expect;
 describe('promise test', ()=> {
 
 	var cache;
-	before(done => {
-		cache = new Cache({modules: 'memory'}, done);
-	});
+	before(()=> {
+		cache = new Cache({modules: 'memory'});
+		return cache.init();
+	})
 
 	before('clear out existing items', ()=> cache.clear());
 

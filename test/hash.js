@@ -4,8 +4,9 @@ var expect = require('chai').expect;
 describe('hash()', ()=> {
 
 	var cache;
-	before(done => {
-		cache = new Cache({modules: 'memory'}, done);
+	before(()=> {
+		cache = new Cache({modules: 'memory'});
+		return cache.init();
 	});
 
 	it('should be able to hash simple values', ()=> {
