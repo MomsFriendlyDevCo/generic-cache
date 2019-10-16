@@ -235,14 +235,31 @@ var mlog = require('mocha-logger');
 			});
 		});
 
+		it('to not return non-existant values (using get cb)', function(done) {
+			cache.get('nonExistant', (err, res) => {
+				expect(err).to.be.not.ok;
+				expect(res).to.be.undefined;
+				done();
+			})
+		});
 
-		it('to not return non-existant values', function(done) {
+		it('to not return non-existant values (using get promise)', ()=>
+			cache.get('nonExistant')
+				.then(v => expect(v).to.be.undefined)
+		);
+
+		it('to not return non-existant values (using has cb)', function(done) {
 			cache.has('nonExistant', (err, res) => {
 				expect(err).to.not.be.ok;
 				expect(res).to.be.false;
 				done();
 			});
 		});
+
+		it('to not return non-existant values (using has promise)', ()=>
+			cache.has('nonExistant')
+				.then(v => expect(v).to.be.equal(false))
+		);
 
 		it('to correctly return it has set values', done => {
 			cache.set('someValue', 'Hello World', (err, res) => {
