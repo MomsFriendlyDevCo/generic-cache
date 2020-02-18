@@ -12,7 +12,6 @@ var mlog = require('mocha-logger');
 ].forEach(mod => {
 
 	describe(`${mod} module`, function() {
-
 		let cache;
 		before(()=> {
 			this.timeout(5000);
@@ -20,7 +19,6 @@ var mlog = require('mocha-logger');
 				.on('loadedMod', mod => mlog.log('Loaded mod', mod))
 				.on('noMods', ()=> {
 					mlog.log('Module unavailable');
-					this.skip();
 				})
 
 			return cache.init();
