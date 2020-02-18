@@ -2,7 +2,6 @@ var _ = require('lodash');
 var async = require('async-chainable');
 var fs = require('fs');
 var fspath = require('path');
-var mkdirp = require('mkdirp');
 var os = require('os');
 
 module.exports = function(settings, cache) {
@@ -42,11 +41,11 @@ module.exports = function(settings, cache) {
 				},
 			})
 			.parallel([
-				function(next) {
-					mkdirp(fspath.dirname(this.path), next);
+				function() {
+					return fs.promises.mkdir(fspath.dirname(this.path), {recursive: true});
 				},
-				function(next) {
-					mkdirp(fspath.dirname(this.pathSwap), next);
+				function() {
+					return fs.promises.mkdir(fspath.dirname(this.pathSwap), {recursive: true});
 				},
 			])
 			.then(function(next) {
