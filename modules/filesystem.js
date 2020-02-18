@@ -113,7 +113,11 @@ module.exports = function(settings, cache) {
 				} else { // Read the file in fresh
 					fs.readFile(this.path, (err, buf) => {
 						if (err) return next(err);
-						next(null, settings.filesystem.deserialize(buf));
+						try {
+							next(null, settings.filesystem.deserialize(buf));
+						} catch (e) {
+							next(`Error parsing JSON file "${this.path}" - ${e.toString()}`);
+						}
 					});
 				}
 			})
