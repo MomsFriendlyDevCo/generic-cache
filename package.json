@@ -35,13 +35,13 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^7.0.1",
+    "mocha": "^8.0.1",
     "mocha-logger": "^1.0.6",
-    "moment": "^2.24.0"
+    "moment": "^2.27.0"
   },
   "optionalDependencies": {
     "memcached": "^2.2.2",
-    "mongoose": "^5.9.1",
+    "mongoose": "^5.9.20",
     "redis": "^3.0.2"
   }
 }
