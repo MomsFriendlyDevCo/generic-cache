@@ -397,7 +397,7 @@ function Cache(options, cb) {
 			: _.isDate(val) ? val // Already a date?
 			: val.constructor.name == 'Moment' ? val.toDate() // Is a Moment object?
 			: isFinite(val) ? new Date(Date.now() + Number(val)) // Looks like a number?
-			: typeof val == 'string' ? new Date(Date.now() + timestring(val)) // Relative time string
+			: typeof val == 'string' ? new Date(Date.now() + timestring(val, 'ms')) // Relative time string
 			: undefined;
 
 
