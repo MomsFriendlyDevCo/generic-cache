@@ -29,6 +29,9 @@ function Cache(options) {
 
 	cache.settings = {
 		init: true, // automatically run cache.init() when constructing
+		cleanInit: true,
+		cleanAuto: true,
+		cleanAutoInterval: '1h',
 		keyMangle: key => key,
 		keyQuery: q => /./,
 		modules: ['memory'],
@@ -49,6 +52,36 @@ function Cache(options) {
 		} else {
 			_.set(cache.settings, key, val);
 		}
+		return cache;
+	};
+
+
+	/**
+	* Setup / cancel auto cleaning
+	* @param {string|boolean} newInterval Either the new auto-cleaning interval or falsy to disable
+	* @returns {Cache} This chainable object
+	*
+	* @emits autoCleanSet emitted as (newInterval) when an autoClean value is provied
+	* @emits autoClean emitted when an autoClean is starting
+	* @emits autoCleanEnd emitted when an autoClean has completed
+	*/
+	cache.autoClean = function(newInterval) {
+		debug('autoClean', newInterval);
+		this.emit('autoCleanSet', newInterval);
+
+		// Remove existing timer if there is one
+		if (cache.autoClean.timerHandle) clearInterval(cache.autoClean.timerHandle);
+
+		if (newInterval) // If truthy subscribe to the cleaning timer
+			cache.autoClean.timerHandle = setTimeout(()=> {
+				cache.clean()
+					.then(()=> debug('autoClean', 'start'))
+					.then(()=> this.emit('autoClean'))
+					.then(()=> cache.autoClean())
+					.finally(()=> debug('autoClean', 'end'))
+					.finally(()=> this.emit('autoCleanEnd'))
+			}, cache.settings.autoCleanInterval);
+
 		return cache;
 	};
 

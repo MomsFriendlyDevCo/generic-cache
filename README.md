@@ -74,6 +74,9 @@ Valid options are:
 | Option                    | Type     | Default                            | Description                                                          |
 |---------------------------|----------|------------------------------------|----------------------------------------------------------------------|
 | `init`                    | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
+| `cleanInit`               | Boolean  | `true`                             | Run `clean()` in the background on each init                         |
+| `cleanAuto`               | Boolean  | `true`                             | Run `autoClean()` automatically in the background on init            |
+| `cleanAutoInterval`       | String   | `"1h"`                             | Timestring to use when rescheduling `autoClean()`                    |
 | `keyMangle`               | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
 | `modules`                 | Array    | `['memory']`                       | What modules to attempt to load                                      |
 | `serialize`               | Function | `marshal.serialize`                | The serializing function to use when storing objects                 |
@@ -112,6 +115,13 @@ cache.init()
 Initialize the cache handler and attempt to load the modules in preference order.
 This function is automatically executed in the constructor if `cache.settings.init` is truthy.
 This function returns a promise.
+
+
+cache.autoClean(newInterval)
+----------------------------
+Setup a time to clean out all expired cache items.
+If no interval is provided the option `autoCleanInterval` is used.
+If the interval is falsy the timer is disabled.
 
 
 cache.set(Object, [expiry]) or cache.set(key, value, [expiry])

@@ -197,6 +197,34 @@ var mlog = require('mocha-logger');
 			return cache.clear();
 		});
 
+		it('should handle autoCleaning', function(done) {
+			if (!cache.can('clean')) return this.skip();
+			var fired = {setup: 0, start: 0, end: 0, error: 0};
+
+			var listenSetup = ()=> fired.setup++;
+			var listenStart = ()=> fired.start++;
+			var listenEnd = ()=> fired.end++;
+			var listenError = ()=> fired.error++;
+
+			cache.autoClean(100)
+				.on('autoCleanSet', listenSetup)
+				.on('autoClean', listenStart)
+				.on('autoCleanEnd', listenEnd)
+				.on('error', listenError)
+
+			setTimeout(()=> {
+				expect(fired).to.be.deep.equal({setup: 1, start: 1, end: 1, error: 0});
+
+				cache
+					.off('autoCleanSet', listenSetup)
+					.off('autoCleanStart', listenStart)
+					.off('autoCleanEnd', listenEnd)
+					.off('error', listenError)
+
+				done();
+			}, 500);
+		});
+
 	});
 
 });
