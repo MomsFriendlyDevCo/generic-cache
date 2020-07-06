@@ -29,8 +29,8 @@ function Cache(options) {
 
 	cache.settings = {
 		init: true, // automatically run cache.init() when constructing
-		cleanInit: true,
-		cleanAuto: true,
+		cleanInit: false,
+		cleanAuto: false,
 		cleanAutoInterval: '1h',
 		keyMangle: key => key,
 		keyQuery: q => /./,
@@ -133,6 +133,8 @@ function Cache(options) {
 					debug('Using module', cache.activeModule.id);
 				}
 			})
+			.then(()=> cache.settings.cleanInit && cache.clean())
+			.then(()=> cache.settings.cleanAuto && cache.autoClean())
 			.then(()=> cache)
 	};
 

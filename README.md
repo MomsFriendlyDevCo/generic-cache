@@ -74,8 +74,8 @@ Valid options are:
 | Option                    | Type     | Default                            | Description                                                          |
 |---------------------------|----------|------------------------------------|----------------------------------------------------------------------|
 | `init`                    | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
-| `cleanInit`               | Boolean  | `true`                             | Run `clean()` in the background on each init                         |
-| `cleanAuto`               | Boolean  | `true`                             | Run `autoClean()` automatically in the background on init            |
+| `cleanInit`               | Boolean  | `false`                            | Run `clean()` in the background on each init                         |
+| `cleanAuto`               | Boolean  | `false`                            | Run `autoClean()` automatically in the background on init            |
 | `cleanAutoInterval`       | String   | `"1h"`                             | Timestring to use when rescheduling `autoClean()`                    |
 | `keyMangle`               | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
 | `modules`                 | Array    | `['memory']`                       | What modules to attempt to load                                      |
