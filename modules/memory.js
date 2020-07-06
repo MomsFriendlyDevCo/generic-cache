@@ -2,69 +2,56 @@ var _ = require('lodash');
 var marshal = require('@momsfriendlydevco/marshal');
 
 module.exports = function(settings) {
-	var driver = this;
+	var driver = {};
 	driver.store = {};
 
-	driver.canLoad = function(cb) {
-		cb(null, true); // Memory module is always available
-	};
+	driver.canLoad = ()=> true; // Memory module is always available
 
-	driver.set = function(key, val, expiry, cb) {
+	driver.set = (key, val, expiry) => {
 		driver.store[key] = {
 			value: val,
 			expiry: expiry,
 			created: new Date(),
 		};
 
-		cb(null, val);
+		return val;
 	};
 
-	driver.get = function(key, fallback, cb) {
+	driver.get = (key, fallback) => {
 		var existing = driver.store[key];
 		var now = new Date();
 		if (existing && (!existing.expiry || existing.expiry > now)) { // Is valid and has not yet expired
-			cb(null, existing.value);
+			return existing.value;
 		} else if (existing && existing.expiry && existing.expiry <= now) { // Has expired - release memory
-			this.unset(key, ()=> {
-				cb(null, fallback || undefined);
-			});
+			return Promise.resolve(driver.unset(key)).then(()=> fallback);
 		} else { // Not found anyway
-			cb(null, fallback || undefined);
+			return fallback;
 		}
 	};
 
-	driver.size = function(key, cb) {
+	driver.size = key => {
 		var existing = driver.store[key];
-		if (!existing) return cb(null, undefined);
-		cb(null, marshal.serialize(existing.value).length);
+		if (!existing) return undefined;
+		return marshal.serialize(existing.value).length;
 	};
 
-	driver.unset = function(key, cb) {
-		delete driver.store[key];
-		cb();
-	};
+	driver.unset = key => delete driver.store[key];
 
-	driver.has = function(key, cb) {
-		cb(null, _.has(driver.store, key));
-	};
+	driver.has = key => _.has(driver.store, key);
 
-	driver.list = function(cb) {
-		cb(null, _.map(driver.store, (v, k) => ({
+	driver.list = ()=>
+		_.map(driver.store, (v, k) => ({
 			id: k,
 			expiry: v.expiry,
 			created: v.created,
-		})));
-	};
+		}));
 
-	driver.vacuume = function(cb) {
+	driver.vacuume = ()=> {
 		var now = new Date();
 		driver.store = _.pickBy(driver.store, (s, k) => !s.expiry || s.expiry > now);
-		cb();
 	};
 
-	driver.destroy = function(cb) {
-		cb();
-	};
+	driver.destroy = ()=> null;
 
 	return driver;
 };

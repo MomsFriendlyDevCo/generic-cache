@@ -1,264 +1,131 @@
 var _ = require('lodash');
-var async = require('async-chainable');
 var fs = require('fs');
 var fspath = require('path');
 var os = require('os');
 
 module.exports = function(settings, cache) {
-	var driver = this;
+	var driver = {};
 
 	driver.settings = _.defaultsDeep(settings, {
 		filesystem: {
 			fallbackDate: new Date('2500-01-01'),
-			useMemory: false,
-			memoryFuzz: 200,
-			path: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), 'cache', key + '.cache.json')),
-			pathSwap: (key, val, expiry, cb) => cb(null, fspath.join(os.tmpdir(), 'cache', key + '.cache.swap.json')),
-			pathList: cb => cb(null, fspath.join(os.tmpdir(), 'cache')),
-			pathFilter: (file, cb) => cb(null, file.endsWith('.cache.json')),
-			pathId: (file, cb) => cb(null, fspath.basename(file, '.cache.json')),
+			path: (key, val, expiry) => fspath.join(os.tmpdir(), 'cache', key + '.cache.json'),
+			pathSwap: (key, val, expiry) => fspath.join(os.tmpdir(), 'cache', key + '.cache.swap.json'),
+			pathList: ()=> fspath.join(os.tmpdir(), 'cache'),
+			pathFilter: file => file.endsWith('.cache.json'),
+			pathId: file => fspath.basename(file, '.cache.json'),
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
 		},
 	});
 
-	driver.memoryCache = {}; // If driver.settings.filesystem.useMemory is enabled this is a key/{created, value} store
+	driver.canLoad = ()=> true; // Filesystem module is always available
 
-	driver.canLoad = function(cb) {
-		cb(null, true); // Filesystem module is always available
+	driver.set = (key, val, expiry) => {
+		var path, pathSwap;
+
+		return Promise.resolve()
+			.then(()=> Promise.all([
+				Promise.resolve(driver.settings.filesystem.path(key, val, expiry))
+					.then(res => path = res)
+					.then(()=> fs.promises.mkdir(fspath.dirname(path), {recursive: true})),
+
+				Promise.resolve(driver.settings.filesystem.pathSwap(key, val, expiry))
+					.then(res => pathSwap = res)
+					.then(()=> fs.promises.mkdir(fspath.dirname(pathSwap), {recursive: true})),
+			]))
+			.then(()=> fs.promises.writeFile(pathSwap, settings.filesystem.serialize(val)))
+			.then(()=> fs.promises.utimes(pathSwap, new Date(), expiry || driver.settings.filesystem.fallbackDate))
+			.then(()=> fs.promises.unlink(path).catch(()=> null)) // Delete original and purposely ignore errors - original file probably didn't exist in the first place
+			.then(()=> fs.promises.rename(pathSwap, path)) // Move the swap file over the original path
 	};
 
-	driver.set = function(key, val, expiry, cb) {
-		var now = new Date();
+	driver.get = function(key, fallback) {
+		var path;
 
-		async()
-			.parallel({
-				path: function(next) {
-					driver.settings.filesystem.path(key, val, expiry, next);
-				},
-				pathSwap: function(next) {
-					driver.settings.filesystem.pathSwap(key, val, expiry, next);
-				},
+		return Promise.resolve(driver.settings.filesystem.path(key, null, null))
+			.then(res => path = res)
+			.then(()=> fs.promises.stat(path).catch(()=> null))
+			.then(stats => {
+				if (!stats) { // No stats - no file to read
+					return false;
+				} else if (stats.mtime < new Date()) { // Modified date is in the past - the file has expired
+					return fs.promises.unlink(path) // Delete the file then respond that it has expired
+						.then(()=> false)
+						.catch(()=> false)
+				} else {
+					return true;
+				}
 			})
-			.parallel([
-				function() {
-					return fs.promises.mkdir(fspath.dirname(this.path), {recursive: true});
-				},
-				function() {
-					return fs.promises.mkdir(fspath.dirname(this.pathSwap), {recursive: true});
-				},
-			])
-			.then(function(next) {
-				fs.writeFile(this.pathSwap, settings.filesystem.serialize(val), next);
-			})
-			.then(function(next) { // Set the modified time to the expiry
-				if (!expiry) expiry = driver.settings.filesystem.fallbackDate; // Set expiry to a stupid future value
-				fs.utimes(this.pathSwap, now, expiry, next);
-			})
-			.then(function(next) { // Delete the original path
-				fs.unlink(this.path, err => next()) // Purposely ignore errors - original file probably didn't exist in the first place
-			})
-			.then(function(next) { // Move the swap file over the original path
-				fs.rename(this.pathSwap, this.path, next);
-			})
-			.end(function(err) {
-				if (err) return cb(err);
-				if (driver.settings.filesystem.useMemory) driver.memoryCache[key] = {created: now, value: val};
-				cb(null, val);
+			.then(isValid => isValid
+				? fs.promises.readFile(path)
+					.then(buf => settings.filesystem.deserialize(buf))
+					.catch(e => {
+						throw new Error(`Error parsing JSON file "${path}" - ${e.toString()}`);
+					})
+				: undefined
+			)
+	};
+
+	driver.unset = key =>
+		Promise.resolve(driver.settings.filesystem.path(key, null, null))
+			.then(res => path = res)
+			.then(path => fs.promises.unlink(path)) // Delete file - ignoring errors
+			.catch(()=> undefined);
+
+	driver.has = key =>
+		Promise.resolve(driver.settings.filesystem.path(key, null, null))
+			.then(path => fs.promises.stat(path).catch(()=> false)) // Try to fetch stats, ignoring missing file
+			.then(stats =>
+				stats // stats valid - file exists
+				&& stats.mtime >= new Date() // Modified date is in the future - the file has not expired
+			);
+
+	driver.size = key =>
+		Promise.resolve(driver.settings.filesystem.path(key, null, null))
+			.then(path => fs.promises.stat(path).catch(()=> false)) // Get stats igoring missing files
+			.then(stats => {
+				if (
+					!stats // No stats - no file to read
+					|| stats.mtime < new Date() // Modified date is in the past - the file has expired
+				) {
+					return undefined;
+				} else {
+					return stats.size;
+				}
 			});
-	};
 
-	driver.get = function(key, fallback, cb) {
-		async()
-			.parallel({
-				path: function(next) {
-					driver.settings.filesystem.path(key, null, null, next);
-				},
-				pathSwap: function(next) {
-					driver.settings.filesystem.pathSwap(key, null, null, next);
-				},
-			})
-			.then(function(next) { // Loop until the swap file doesn't exist
-				var swapPath = this.pathSwap;
-				var checkSwap = function() {
-					fs.access(swapPath, err => {
-						if (err) return next(); // Swap doesn't exist - continue on
-						setTimeout(checkSwap, _.random(0, 100)); // Schedule another check at a random offset
-					});
-				};
-				checkSwap();
-			})
-			.then('stats', function(next) {
-				fs.stat(this.path, (err, stats) => {
-					if (err) return next();
-					next(null, stats);
-				});
-			})
-			.then('isValid', function(next) {
-				if (!this.stats) { // No stats - no file to read
-					return next(null, false)
-				} else if (this.stats.mtime < new Date()) { // Modified date is in the past - the file has expired
-					fs.unlink(this.path, err => next(null, false)); // Delete the file then respond that it has expired
-					if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
-				} else {
-					next(null, true);
-				}
-			})
-			.then('value', function(next) {
-				if (!this.isValid) return next(null, fallback);
+	driver.list = ()=> {
+		var rootPath;
 
-				if (driver.settings.filesystem.useMemory && driver.memoryCache[key] && driver.memoryCache[key].created >= this.stats.ctime - driver.settings.filesystem.memoryFuzz) { // Use the memory cache instead of the actual file
-					next(null, driver.memoryCache[key].value);
-				} else { // Read the file in fresh
-					fs.readFile(this.path, (err, buf) => {
-						if (err) return next(err);
-						try {
-							next(null, settings.filesystem.deserialize(buf));
-						} catch (e) {
-							next(`Error parsing JSON file "${this.path}" - ${e.toString()}`);
-						}
-					});
-				}
-			})
-			.end(function(err) {
-				if (err) return cb(err);
-				cb(null, this.value);
-			})
-	};
-
-	driver.unset = function(key, cb) {
-		async()
-			.then('path', function(next) {
-				driver.settings.filesystem.path(key, null, null, next);
-			})
-			.then(function(next) {
-				fs.unlink(this.path, () => next()); // Delete file - ignoring errors
-				if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
-			})
-			.end(cb);
-	};
-
-	driver.has = function(key, cb) {
-		async()
-			.then('path', function(next) {
-				driver.settings.filesystem.path(key, null, null, next);
-			})
-			.then('stats', function(next) {
-				fs.stat(this.path, (err, stats) => {
-					if (err) return next();
-					next(null, stats);
-				});
-			})
-			.then('isValid', function(next) {
-				if (!this.stats) { // No stats - no file to read
-					return next(null, false)
-				} else if (this.stats.mtime < new Date()) { // Modified date is in the past - the file has expired
-					fs.unlink(this.path, err => next(null, false)); // Delete the file then respond that it has expired
-					if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
-				} else {
-					next(null, true);
-				}
-			})
-			.end('isValid', cb);
-	};
-
-	driver.size = function(key, cb) {
-		async()
-			.then('path', function(next) {
-				driver.settings.filesystem.path(key, null, null, next);
-			})
-			.then('stats', function(next) {
-				fs.stat(this.path, (err, stats) => {
-					if (err) return next();
-					next(null, stats);
-				});
-			})
-			.then('size', function(next) {
-				if (!this.stats) { // No stats - no file to read
-					return next(null, undefined)
-				} else if (this.stats.mtime < new Date()) { // Modified date is in the past - the file has expired
-					fs.unlink(this.path, err => next(null, undefined)); // Delete the file then respond that it has expired
-					if (driver.settings.filesystem.useMemory && driver.memoryCache[key]) delete driver.memoryCache[key];
-				} else {
-					next(null, this.stats.size);
-				}
-			})
-			.end('size', cb);
-	};
-
-	driver.list = function(cb) {
-		async()
-			// Calculate path {{{
-			.then('path', function(next) {
-				driver.settings.filesystem.pathList(next);
-			})
-			// }}}
-			// Read directory contents {{{
-			.then('files', function(next) {
-				fs.readdir(this.path, (err, res) => {
-					if (err && err.code == 'ENOENT') {
-						return next(null, []);
-					} else if (err) {
-						return next(err);
-					} else {
-						next(null, res);
-					}
-				});
-			})
-			// }}}
-			.map('files', 'files', function(next, file) {
-				var path = fspath.join(this.path, file);
-				async()
-					// Check if the file is valid {{{
-					.then('isValid', function(next) {
-						driver.settings.filesystem.pathFilter(path, next);
-					})
-					// }}}
-					.parallel({
-						// Extract the ID {{{
-						id: function(next) {
-							if (!this.isValid) return next();
-							driver.settings.filesystem.pathId(path, next);
-						},
-						// }}}
-						// Fetch the stats {{{
-						stat: function(next) {
-							if (!this.isValid) return next();
-							fs.stat(path, function(err, stat) { // Try and read the stats - if we fail remove it from the list
-								if (err) return next();
-								next(null, stat);
-							});
-						},
-						// }}}
-					})
-					// Compose the return entity {{{
-					.end(function(err) {
-						if (err) return next(err);
-						if (!this.isValid || !this.stat) return next();
-						next(null, {
-							id: this.id,
-							created: this.stat.ctime,
-							expiry: this.stat.mtime,
+		return Promise.resolve(driver.settings.filesystem.pathList())
+			.then(res => rootPath = res)
+			.then(()=> fs.promises.readdir(rootPath).catch(()=> []))
+			.then(files => Promise.all(files.map(file =>
+				Promise.resolve(driver.settings.filesystem.pathFilter(file))
+					.then(isValid => isValid ? Promise.resolve(driver.settings.filesystem.pathId(file)) : false)
+					.then(id => id
+						? fs.promises.stat(fspath.join(rootPath, file))
+							.then(stats => {
+								if (stats.mtime < new Date()) return false; // Filter out expired items
+								stats.id = id;
+								return stats;
+							})
+						: false
+					)
+					.then(stats => stats
+						? ({
+							id: stats.id,
+							created: stats.ctime,
+							expiry: stats.mtime,
 						})
-					})
-					// }}}
-			})
-			// Fitler out invalid files {{{
-			.then('files', function(next) {
-				next(null, this.files.filter(file => !! file));
-			})
-			// }}}
-			// End {{{
-			.end(function(err) {
-				if (err) return cb(err);
-				cb(null, this.files);
-			})
-			// }}}
+						: false
+					)
+			)))
+			.then(ids => ids.filter(id => id)); // Remove dud ID's
 	};
 
-	driver.destroy = function(cb) {
-		cb();
-	};
+	driver.destroy = ()=> {};
 
 	return driver;
 };

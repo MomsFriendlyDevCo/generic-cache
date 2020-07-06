@@ -43,7 +43,7 @@ describe('promise test', ()=> {
 	it('should be able to clear all items', ()=>
 		cache.clear()
 			.then(()=> cache.get('promiseBaz'))
-			.then(v => expect(v).to.not.be.ok)
+			.then(v => expect(v).to.be.undefined)
 	);
 
 });

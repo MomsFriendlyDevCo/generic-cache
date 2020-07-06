@@ -11,11 +11,11 @@ describe('Bad JSON data', function() {
 	before(()=> {
 		cache = new Cache({
 			modules: ['filesystem'],
-			path: (key, val, expiry, cb) => path.join(os.tmpdir(), 'cache', `${key}.cache.json`),
-			pathSwap: (key, val, expiry, cb) => path.join(os.tmpdir(), 'cache', `${key}.cache.swap.json`),
-			pathList: cb => cb(null, fspath.join(os.tmpdir(), 'cache')),
-			pathFilter: (file, cb) => cb(null, file.endsWith('.cache.json')),
-			pathId: (file, cb) => cb(null, fspath.basename(file, '.cache.json')),
+			path: (key, val, expiry) => path.join(os.tmpdir(), 'cache', `${key}.cache.json`),
+			pathSwap: (key, val, expiry) => path.join(os.tmpdir(), 'cache', `${key}.cache.swap.json`),
+			pathList: ()=> fspath.join(os.tmpdir(), 'cache'),
+			pathFilter: file => file.endsWith('.cache.json'),
+			pathId: file => fspath.basename(file, '.cache.json'),
 		})
 
 		return cache.init();

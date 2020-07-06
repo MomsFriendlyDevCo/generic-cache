@@ -1,9 +1,8 @@
 var _ = require('lodash');
-var async = require('async-chainable');
 var mongoose = require('mongoose');
 
 module.exports = function(settings, cache) {
-	var driver = this;
+	var driver = {};
 
 	driver.schema;
 	driver.model;
@@ -11,27 +10,23 @@ module.exports = function(settings, cache) {
 	driver.settings = _.defaultsDeep(settings, {
 		mongodb: {
 			uri: 'mongodb://localhost/mfdc-cache',
+			options: {
+				useCreateIndex: true,
+				useNewUrlParser: true,
+				useUnifiedTopology: true,
+			},
 			collection: 'mfdcCaches',
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
 		},
 	});
 
-	driver.canLoad = function(cb) {
-		async()
-			// Sanity checks {{{
-			.then(function(next) {
-				if (!settings.mongodb.uri) return next('Missing setting: mongodb.uri');
-				next();
-			})
-			// }}}
-			// Connect {{{
-			.then(function(next) {
-				mongoose.connect(settings.mongodb.uri, next);
-			})
-			// }}}
-			// Setup storage schema {{{
-			.then(function(next) {
+	driver.canLoad = ()=> {
+		if (!settings.mongodb.uri) throw new Error('Missing setting: mongodb.uri');
+
+		return mongoose.connect(settings.mongodb.uri, settings.mongodb.options)
+			.then(()=> {
+				// Setup storage schema
 				driver.schema = new mongoose.Schema({
 					key: {type: mongoose.Schema.Types.String, index: {unique: true}},
 					expiry: {type: mongoose.Schema.Types.Date},
@@ -39,98 +34,65 @@ module.exports = function(settings, cache) {
 					value: {type: mongoose.Schema.Types.Mixed},
 				});
 				driver.model = mongoose.model(settings.mongodb.collection, driver.schema);
-
-				next();
 			})
-			// }}}
-			// End {{{
-			.end(function(err) {
-				if (err) return cb(err);
-				cb(null, true);
-			});
-			// }}}
+			.then(()=> true)
 	};
 
-	driver.set = function(key, value, expiry, cb) {
-		async()
-			// Find existing document if it exists {{{
-			.then('existing', function(next) {
-				driver.model.findOne({key})
-					.exec(next);
-			})
-			// }}}
-			// Update or create document {{{
-			.then(function(next) {
+	driver.set = (key, value, expiry) =>
+		driver.model.findOne({key})
+			.then(existing => {
 				if (this.existing) {
-					this.existing.save({value: settings.mongodb.serialize(value), $ignoreModified: true}, next);
+					return this.existing.save({value: settings.mongodb.serialize(value), $ignoreModified: true});
 				} else {
-					driver.model.create({key, value: settings.mongodb.serialize(value), expiry, created: new Date()}, next);
+					return driver.model.create({key, value: settings.mongodb.serialize(value), expiry, created: new Date()});
 				}
-			})
-			// }}}
-			.end(cb)
+			});
 
-	};
-
-	driver.get = function(key, fallback, cb) {
+	driver.get = (key, fallback) =>
 		driver.model.findOne({key})
 			.lean()
-			.exec((err, doc) => {
+			.then(doc => {
 				if (!doc) { // Not found
-					cb(null, fallback || undefined);
+					return fallback;
 				} else if (doc.expiry && doc.expiry < new Date()) { // Expired
-					driver.unset(key, function() {
-						cb(null, fallback);
-					});
+					return driver.unset(key).then(()=> fallback);
 				} else { // Value ok
-					cb(null, settings.mongodb.deserialize(doc.value));
+					return settings.mongodb.deserialize(doc.value);
 				}
 			});
-	};
 
-	driver.unset = function(key, cb) {
-		driver.model.deleteOne({key}, cb);
-	};
+	driver.unset = key => driver.model.deleteOne({key});
 
-	driver.has = function(key, cb) {
+	driver.has = key =>
 		driver.model.findOne({key})
 			.select('_id')
 			.lean()
-			.exec((err, doc) => {
+			.then(doc => {
 				if (!doc) { // Not found
-					cb(null, false);
+					return false;
 				} else if (doc.expiry && doc.expiry < new Date()) { // Expired
-					driver.unset(key, function() {
-						cb(null, false);
-					});
+					return driver.unset(key)
+						.then(()=> false);
 				} else { // Value ok
-					cb(null, true);
+					return true;
 				}
 			});
-	};
 
-	driver.list = function(cb) {
+	driver.list = ()=>
 		driver.model.find()
 			.lean()
-			.exec((err, docs) => {
-				if (err) return cb(err);
-				cb(null, docs.map(doc => ({
-					id: doc.key,
-					created: doc.created,
-					expiry: doc.expiry,
-				})));
-			});
-	};
+			.then(docs => docs.map(doc => ({
+				id: doc.key,
+				created: doc.created,
+				expiry: doc.expiry,
+			})));
 
-	driver.vacuume = function(cb) {
+	driver.vacuume = ()=>
 		driver.model.deleteMany({
 			expiry: {$lt: new Date()},
-		}, cb);
-	};
+		});
 
-	driver.destroy = function(cb) {
-		mongoose.connection.close(cb);
-	};
+	driver.destroy = ()=> mongoose.connection.close();
 
 	return driver;
 };

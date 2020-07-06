@@ -13,23 +13,23 @@ var storage = new Cache({
 });
 
 
-// Set something (key, val, [expiry], [callback])
-storage.set('myKey', 'myValue', moment().add(1, 'day'), (err, val) => ...)
+// Set something (key, val, [expiry])
+storage.set('myKey', 'myValue', '1h').then(setVal => ...)
 
-// Get something (key, [fallback], callback)
-storage.get('myKey', 'fallbackValue', (err, val) => ...)
+// Get something (key, [fallback])
+storage.get('myKey', 'fallbackValue').then(val => ...)
 
-// Forget something (key, [callback])
-storage.unset('myKey', err => ...)
+// Forget something (key)
+storage.unset('myKey').then(()=> ...)
 
-// Clean up storage, only supported by some modules ([callback])
-storage.vacuume(err => ...)
+// Clean up storage, only supported by some modules
+storage.vacuume().then(()=> ...)
 
 // Hash something, objects also supported
 storage.hash(complexObject, val => ...)
 ```
 
-All methods may take a callback or return a promise.
+All methods return a promise.
 
 
 Supported Caching Drivers
@@ -56,8 +56,6 @@ Supported Caching Drivers
 API
 ===
 
-**NOTE:** In all cases where `[callback]` is specified in the syntax, this module supports either callbacks or promise returns.
-
 
 Cache([options]) (constructor)
 ------------------------------
@@ -82,7 +80,6 @@ Valid options are:
 | `deserialize`             | Function | `marshal.deserialize`              | The deserializing function to use when restoring objects             |
 | `filesystem`              | Object   | See below                          | Filesystem module specific settings                                  |
 | `filesystem.fallbackDate` | Date     | `2500-01-01`                       | Fallback date to use as the filesystem expiry time                   |
-| `filesystem.useMemory`    | Boolean  | `false`                            | Whether to also hold copies of the file contents in RAM as well as saving to disk (makes reads quicker but uses more memory) |
 | `filesystem.memoryFuzz`   | Number   | `200`                              | How many Milliseconds bias to use when comparing the file ctime to the memory creation date |
 | `filesystem.path`         | Function | os.tempdir + key + '.cache.json'   | How to calculate the file path to save. Defaults to the OS temp dir  |
 | `filesystem.pathSwap`     | Function | " + " + '.cache.swap.json'         | How to calculate the swap path to save. Defaults to the OS temp dir  |
@@ -93,6 +90,7 @@ Valid options are:
 | `mongodb`                 | Object   | See below                          | MongoDB module specific options                                      |
 | `mongodb.uri`             | String   | `'mongodb://localhost/mfdc-cache'` | The MongoDB URI to connect to                                        |
 | `mongodb.collection`      | String   | `mfdcCaches`                       | The collection to store cache information within                     |
+| `mongodb.options`         | Object   | See code                           | Additional Mongo options to use when connecting                      |
 | `redis`                   | Object   | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis |
 
 
@@ -109,68 +107,66 @@ cache.option()
 Alias of `cache.options()`.
 
 
-cache.init([callback])
-----------------------
+cache.init()
+------------
 Initialize the cache handler and attempt to load the modules in preference order.
 This function is automatically executed in the constructor if `cache.settings.init` is truthy.
 This function returns a promise.
 
 
-cache.set(Object, [expiry], [callback]) or cache.set(key, value, [expiry], [callback])
+cache.set(Object, [expiry]) or cache.set(key, value, [expiry])
 --------------------------------------------------------------------------------------
 Set a collection of keys or a single key with the optional expiry.
 The expiry value can be a date, millisecond offset, moment object or any valid [timestring](https://www.npmjs.com/package/timestring) string.
 This function returns a promise.
 
 
-cache.get(key|keys, [fallback], [callback])
+cache.get(key|keys)
 -------------------------------------------
-Fetch a single value and call the callback. If the value does not exist the fallback value will be provided.
+Fetch a single / multiple values. If the value does not exist the fallback value will be provided.
 If called with an array of keys the result is an object with a key/value combination.
-Callback is called as `(err, value)`.
 This function returns a promise.
 
 
-cache.unset(key|keys, [callback])
+cache.unset(key|keys)
 ---------------------------------
 Release a single or array of keys.
 This function returns a promise.
 
 
-cache.has(key, [callback])
+cache.has(key)
 --------------------------
 Return whether we have the given key but not actually fetch it.
 NOTE: If the individual module does not implement this a simple `get()` will be performed and the return mangled into a boolean. See the compatibility tables at the top of this article to see if 'has' is supported.
 This function returns a promise.
 
 
-cache.size(key, [callback])
+cache.size(key)
 ---------------------------
 Return whether the approximate size in bytes of a cache object.
 This function returns a promise.
 
 
-cache.list(callback)
---------------------
+cache.list()
+------------
 Attempt to return a list of known cache contents.
-Callback is called as `(err, items)`.
 This function returns a promise.
 
 Each item will have at minimum a `id` and `created` value. All other values (e.g. `expiry`) depend on the cache driver being used.
 
 
 
-cache.vacuume([callback])
--------------------------
+cache.vacuume()
+---------------
 Attempt to clean up any left over or expired cache entries.
 This is only supported by some modules.
 This function returns a promise.
 
 
-cache.destroy([callback])
--------------------------
+cache.destroy()
+---------------
 Politely close all driver resource handles before shutting down.
-This function waits for all set operations to complete - even if you didn't attach a callback.
+This function waits for all set operations to complete before resolving.
 This function returns a promise.
 
 

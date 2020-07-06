@@ -24,69 +24,51 @@ var mlog = require('mocha-logger');
 			return cache.init();
 		});
 
-		before('clear out existing items', function(done) {
-			if (!cache.can('clear')) return done();
-			cache.clear(err => {
-				expect(err).to.not.be.ok;
-				done();
-			});
+		before('clear out existing items', ()=> {
+			if (!cache.can('clear')) return;
+			return cache.clear();
 		});
 
 		after(()=> cache.destroy());
 
-		it('should store simple key/vals (as single setter)', done => {
-			cache.set('foo', 'Foo', done);
-		});
+		it('should store simple key/vals (as single setter)', ()=>
+			cache.set('foo', 'Foo')
+		);
 
-		it('should query the size of simple key/vals', function(done) {
+		it('should query the size of simple key/vals', function() {
 			if (!cache.can('size')) return this.skip();
-			cache.size('foo', (err, val) => {
-				expect(err).to.not.be.ok;
-				expect(val).to.be.at.least(5);
-				done();
-			});
+			return cache.size('foo')
+				.then(val => expect(val).to.be.at.least(5))
 		});
 
-		it('should store simple key/vals (as object)', done => {
+		it('should store simple key/vals (as object)', ()=>
 			cache.set({
 				bar: 'Bar',
 				baz: 'Baz',
-			}, done);
-		});
+			})
+		);
 
-		it('should restore simple values (foo)', done => {
-			cache.get('foo', (err, val) => {
-				expect(err).to.not.be.ok;
-				expect(val).to.be.equal('Foo');
-				done();
-			});
-		});
+		it('should restore simple values (foo)', ()=>
+			cache.get('foo')
+				.then(val => expect(val).to.be.equal('Foo'))
+		);
 
-		it('should restore simple values (bar)', done => {
-			cache.get('bar', (err, val) => {
-				expect(err).to.not.be.ok;
-				expect(val).to.be.equal('Bar');
-				done();
-			});
-		});
+		it('should restore simple values (bar)', ()=>
+			cache.get('bar')
+				.then(val => expect(val).to.be.equal('Bar'))
+		);
 
-		it('should restore simple values (baz)', done => {
-			cache.get('baz', (err, val) => {
-				expect(err).to.not.be.ok;
-				expect(val).to.be.equal('Baz');
-				done();
-			});
-		});
+		it('should restore simple values (baz)', ()=>
+			cache.get('baz')
+				.then(val => expect(val).to.be.equal('Baz'))
+		);
 
-		it('should restore simple values again (baz)', done => {
-			cache.get('baz', (err, val) => {
-				expect(err).to.not.be.ok;
-				expect(val).to.be.equal('Baz');
-				done();
-			});
-		});
+		it('should restore simple values again (baz)', ()=>
+			cache.get('baz')
+				.then(val => expect(val).to.be.equal('Baz'))
+		);
 
-		it('should restore native JS primitives', function(done) {
+		it('should restore native JS primitives', function() {
 			if (mod == 'mongodb') return this.skip(); // Mongo doesn't use a serializer so most of the special types will probably fail
 			var sampleObject = {
 				arrays: [[1, 2, 3], [], [[[]]], [-10, 'Hello', Infinity]],
@@ -102,17 +84,15 @@ var mlog = require('mocha-logger');
 				strings: ['', 'a', 'Hello World', '😈🙓😿'],
 			};
 
-			cache.set('testTypes', _.cloneDeep(sampleObject), err => {
-				if (err) return done(err);
-				cache.get('testTypes', (err, val) => {
-					if (err) return done(err);
+			return cache.set('testTypes', _.cloneDeep(sampleObject))
+				.then(()=> cache.get('testTypes'))
+				.then(val => {
 					expect(val).to.deep.equal(sampleObject);
-					cache.unset('testTypes', ()=> done());
-				});
-			});
+					return cache.unset('testTypes');
+				})
 		});
 
-		it('should restore complex nested objects', done => {
+		it('should restore complex nested objects', ()=> {
 			var sampleObject = {
 				foo: 'Foo',
 				bar: {
@@ -134,162 +114,87 @@ var mlog = require('mocha-logger');
 				},
 			};
 
-			cache.set('testNested', sampleObject, err => {
-				if (err) return done(err);
-				cache[cache.can('size') ? 'size' : 'get']('testNested', (err, val) => {
-					expect(err).to.not.be.ok;
+			return cache.set('testNested', sampleObject)
+				.then(()=> cache[cache.can('size') ? 'size' : 'get']('testNested'))
+				.then(val => {
 					if (cache.can('size')) expect(val).to.be.at.least(800);
-					cache.get('testNested', (err, val) => {
-						if (err) return done(err);
-						expect(val).to.deep.equal(sampleObject);
-						cache.unset('testNested', ()=> done());
-					});
-				});
-			});
+					return cache.get('testNested');
+				})
+				.then(val => expect(val).to.deep.equal(sampleObject))
+				.then(()=> cache.unset('testNested'))
 		});
 
-		it('should get a list of the current cache IDs', function(done) {
+		it('should get a list of the current cache IDs', function() {
 			if (!cache.can('list')) return this.skip();
-			cache.list((err, res) => {
-				expect(err).to.not.be.ok;
-				expect(res).to.be.an('array');
-				expect(res).to.have.length(3);
-				res.forEach(i => {
-					expect(i).to.have.property('id');
-					expect(i.id).to.be.oneOf(['blahfoo', 'blahbar', 'blahbaz']);
-				});
-				done();
-			});
-		});
-
-		it('should unset a single value', done => {
-			cache.set('unFoo', err => {
-				expect(err).to.not.be.ok;
-				cache.unset('foo', err => {
-					expect(err).to.not.be.ok;
-					cache.get('foo', (err, val) => {
-						expect(err).to.not.be.ok;
-						expect(val).to.be.undefined;
-						done();
+			return cache.list()
+				.then(res => {
+					expect(res).to.be.an('array');
+					expect(res).to.have.length.above(2);
+					res.forEach(i => {
+						expect(i).to.have.property('id');
+						expect(i.id).to.be.oneOf(['blahfoo', 'blahbar', 'blahbaz']);
 					});
 				});
-			});
 		});
 
-		it('should unset multiple values', done => {
-			cache.set({unFoo: 'Foo!', unBar: 'Bar!', unBaz: 'Baz!'}, err => {
-				expect(err).to.not.be.ok;
-				cache.unset(['unFoo', 'unBar', 'unBaz'], err => {
-					expect(err).to.not.be.ok;
-					cache.get(['unFoo', 'unBar', 'unBaz'], (err, vals) => {
-						expect(err).to.not.be.ok;
-						expect(vals).to.be.deep.equal({});
-						done();
-					});
-				});
-			});
-		});
-
-		it('should expire an entry immediately (date = now)', done => {
-			cache.set('quz', 'Quz!', new Date(), err => {
-				expect(err).to.not.be.ok;
-
-				cache.get('quz', (err, val) => {
-					expect(err).to.be.not.ok;
-					expect(val).to.be.undefined;
-
-					done();
-				});
-			});
-		});
-
-		it('should expire an entry with 100ms', done => {
-			cache.set('quzz', 'Quzz!', new Date(Date.now() + 100), err => {
-				expect(err).to.not.be.ok;
-
-				setTimeout(()=> {
-					cache.get('quzz', (err, val) => {
-						expect(err).to.be.not.ok;
-						expect(val).to.be.undefined;
-
-						done();
-					});
-				}, 101);
-			});
-		});
-
-		it('should expire an entry within 1.5s', done => {
-			cache.set('flarp', 'Flarp!', 1500, err => {
-				expect(err).to.not.be.ok;
-
-				setTimeout(()=> {
-					cache.get('flarp', (err, val) => {
-						expect(err).to.be.not.ok;
-						expect(val).to.be.undefined;
-
-						done();
-					});
-				}, 1600);
-			});
-		});
-
-		it('to not return non-existant values (using get cb)', function(done) {
-			cache.get('nonExistant', (err, res) => {
-				expect(err).to.be.not.ok;
-				expect(res).to.be.undefined;
-				done();
-			})
-		});
-
-		it('to not return non-existant values (using get promise)', ()=>
-			cache.get('nonExistant')
-				.then(v => expect(v).to.be.undefined)
+		it('should unset a single value', ()=>
+			cache.set('unFoo', true)
+				.then(()=> cache.unset('unFoo'))
+				.then(()=> cache.get('unFoo'))
+				.then(val => expect(val).to.be.undefined)
 		);
 
-		it('to not return non-existant values (using has cb)', function(done) {
-			cache.has('nonExistant', (err, res) => {
-				expect(err).to.not.be.ok;
-				expect(res).to.be.false;
-				done();
-			});
-		});
+		it('should unset multiple values', ()=>
+			cache.set({unFoo: 'Foo!', unBar: 'Bar!', unBaz: 'Baz!'})
+				.then(()=> cache.unset(['unFoo', 'unBar', 'unBaz']))
+				.then(()=> cache.get(['unFoo', 'unBar', 'unBaz']))
+				.then(vals => expect(vals).to.be.deep.equal({unFoo: undefined, unBar: undefined, unBaz: undefined}))
+		);
+
+		it('should expire an entry with 100ms', ()=>
+			cache.set('quzz', 'Quzz!', new Date(Date.now() + 100))
+				.then(()=> new Promise(resolve => setTimeout(resolve, 101)))
+				.then(()=> cache.get('quzz'))
+				.then(val => expect(val).to.be.undefined)
+		);
+
+		it('should expire an entry within 1s', ()=>
+			cache.set('flarp', 'Flarp!', '1s')
+				.then(()=> new Promise(resolve => setTimeout(resolve, 1200)))
+				.then(()=> cache.get('flarp!'))
+				.then(val => expect(val).to.be.undefined)
+		);
+
+		it('to not return non-existant values', ()=>
+			cache.get('nonExistant')
+				.then(val => expect(val).to.be.undefined)
+		);
 
 		it('to not return non-existant values (using has promise)', ()=>
 			cache.has('nonExistant')
 				.then(v => expect(v).to.be.equal(false))
 		);
 
-		it('to correctly return it has set values', done => {
-			cache.set('someValue', 'Hello World', (err, res) => {
-				expect(err).to.not.be.ok;
-				cache.has('someValue', (err, res) => {
-					expect(err).to.not.be.ok;
-					expect(res).to.be.true;
-					done();
-				});
-			});
-		});
+		it('to correctly return that it has set values', ()=>
+			cache.set('someValue', 'Hello World')
+				.then(()=> cache.has('someValue'))
+				.then(res => expect(res).to.be.true)
+				.then(()=> cache.unset('someValue'))
+		);
 
-		it('should vaccume all expired items', function(done) {
+		it('should vaccume all expired items', function() {
 			if (!cache.can('vacuume')) return this.skip();
-			cache.vacuume(err => {
-				expect(err).to.not.be.ok;
-				cache.list((err, list) => {
-					expect(err).to.not.be.ok;
+			return cache.vacuume()
+				.then(()=> cache.list())
+				.then(list => {
 					expect(list).to.be.an('array');
-					expect(list).to.have.length(3); // Three items should still be around, not having expired
-					done();
+					expect(list).to.have.length.above(2); // Three items should still be around, not having expired
 				});
-			});
 		});
 
-
-		it('should clear all items', function(done) {
+		it('should clear all items', function() {
 			if (!cache.can('clear')) return this.skip();
-			cache.clear(err => {
-				expect(err).to.not.be.ok;
-				done();
-			});
+			return cache.clear();
 		});
 
 	});
