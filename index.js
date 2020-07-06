@@ -227,14 +227,14 @@ function Cache(options) {
 	* NOTE: If the driver does not implement BUT the driver has a list function that returns expiry data a simple loop + expiry check + unset worker will be implemented instead
 	* @returns {Promise} A promise which will resolve when cleanup is complete
 	*/
-	cache.vacuume = ()=> {
+	cache.clean = ()=> {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
-		debug('Vacuume');
+		debug('Clean');
 
-		if (cache.activeModule.vacuume) { // Driver implments its own function
-			return Promise.resolve(cache.activeModule.vacuume());
-		} else if (cache.activeModule.list && cache.activeModule.unset) { // Driver implements a list which we can use instead
+		if (_.isFunction(cache.activeModule.clean)) { // Driver implments its own function
+			return Promise.resolve(cache.activeModule.clean());
+		} else if (cache.can('list')) { // Driver implements a list which we can use instead
 			var now = new Date();
 			return cache.activeModule.list()
 				.then(items => Promise.all(items.map(item =>
@@ -243,7 +243,7 @@ function Cache(options) {
 						: null
 				)))
 		} else {
-			throw new Error('Vacuume is not supported by the selected cache module');
+			throw new Error('Clean is not supported by the selected cache module');
 		}
 	};
 
@@ -283,7 +283,7 @@ function Cache(options) {
 	cache.can = func => {
 		switch (func) {
 			case 'clear':
-			case 'vacuume':
+			case 'clean':
 				return _.isFunction(cache.activeModule[func])
 				|| (_.isFunction(cache.activeModule.list) && _.isFunction(cache.activeModule.unset))
 			default: // Also includes 'list'

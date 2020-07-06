@@ -182,9 +182,9 @@ var mlog = require('mocha-logger');
 				.then(()=> cache.unset('someValue'))
 		);
 
-		it('should vaccume all expired items', function() {
-			if (!cache.can('vacuume')) return this.skip();
-			return cache.vacuume()
+		it('should clean all expired items', function() {
+			if (!cache.can('clean')) return this.skip();
+			return cache.clean()
 				.then(()=> cache.list())
 				.then(list => {
 					expect(list).to.be.an('array');

@@ -23,7 +23,7 @@ storage.get('myKey', 'fallbackValue').then(val => ...)
 storage.unset('myKey').then(()=> ...)
 
 // Clean up storage, only supported by some modules
-storage.vacuume().then(()=> ...)
+storage.clean().then(()=> ...)
 
 // Hash something, objects also supported
 storage.hash(complexObject, val => ...)
@@ -35,20 +35,20 @@ All methods return a promise.
 Supported Caching Drivers
 =========================
 
-| Driver     | Requires         | Maximum object size | Serializer | list() Support | has() support | size() support | vacuume() Support |
-|------------|------------------|---------------------|------------|----------------|---------------|----------------|-------------------|
-| filesystem | Writable FS area | Infinite            | Yes        | Yes            | Yes           | Yes            |                   |
-| memcached  | MemcacheD daemon | 1mb                 | Yes        |                |               |                |                   |
-| memory     | Nothing          | Infinite            | Not needed | Yes            | Yes           | Yes            | Yes               |
-| mongodb    | MongoDB daemon   | 16mb                | Disabled   | Yes            | Yes           |                | Yes               |
-| redis      | Redis daemon     | 512mb               | Yes        | Yes            | Yes           | Yes            |                   |
+| Driver     | Requires         | Maximum object size | Serializer | list() Support | has() support | size() support | clean() Support |
+|------------|------------------|---------------------|------------|----------------|---------------|----------------|------------------|
+| filesystem | Writable FS area | Infinite            | Yes        | Yes            | Yes           | Yes            |                  |
+| memcached  | MemcacheD daemon | 1mb                 | Yes        |                |               |                |                  |
+| memory     | Nothing          | Infinite            | Not needed | Yes            | Yes           | Yes            | Yes              |
+| mongodb    | MongoDB daemon   | 16mb                | Disabled   | Yes            | Yes           |                | Yes              |
+| redis      | Redis daemon     | 512mb               | Yes        | Yes            | Yes           | Yes            |                  |
 
 
 **NOTES**:
 
 * By default MemcacheD caches 1mb slabs, see the documentation of the daemon to increase this
 * While memory storage is theoretically infinite Node has a memory limit of 1.4gb by default. See the node CLI for details on how to increase this
-* Some caching systems (notably MemcacheD) automatically vacuume entries
+* Some caching systems (notably MemcacheD) automatically clean entries
 * For most modules the storage values are encoded / decoded via [marshal](https://github.com/MomsFriendlyDevCo/marshal). This means that complex JS primitives such as Dates, Sets etc. can be stored without issue. This is disabled in the case of MongoDB by default but can be enabled if needed
 * When `has()` querying is not supported by the module a `get()` operation will be performed and the result mangled into a boolean instead, this ensures that all modules support `has()` at the expense of efficiency
 
@@ -156,8 +156,8 @@ Each item will have at minimum a `id` and `created` value. All other values (e.g
 
 
 
-cache.vacuume()
----------------
+cache.clean()
+-------------
 Attempt to clean up any left over or expired cache entries.
 This is only supported by some modules.
 This function returns a promise.

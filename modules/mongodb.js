@@ -87,7 +87,7 @@ module.exports = function(settings, cache) {
 				expiry: doc.expiry,
 			})));
 
-	driver.vacuume = ()=>
+	driver.clean = ()=>
 		driver.model.deleteMany({
 			expiry: {$lt: new Date()},
 		});
