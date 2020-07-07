@@ -63,7 +63,7 @@ module.exports = function(settings, cache) {
 					.catch(e => {
 						throw new Error(`Error parsing JSON file "${path}" - ${e.toString()}`);
 					})
-				: undefined
+				: fallback
 			)
 	};
 

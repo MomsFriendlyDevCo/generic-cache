@@ -166,8 +166,13 @@ var mlog = require('mocha-logger');
 		);
 
 		it('to not return non-existant values', ()=>
-			cache.get('nonExistant')
+			cache.get('nonExistant1')
 				.then(val => expect(val).to.be.undefined)
+		);
+
+		it('to not return non-existant values - with a fallback', ()=>
+			cache.get('nonExistant2', 'FALLBACK!')
+				.then(val => expect(val).to.be.equal('FALLBACK!'))
 		);
 
 		it('to not return non-existant values (using has promise)', ()=>
