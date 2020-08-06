@@ -16,6 +16,8 @@ module.exports = function(settings, cache) {
 			pathId: file => fspath.basename(file, '.cache.json'),
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
+			moveFailTries: 10,
+			moveFailInterval: 100,
 		},
 	});
 
@@ -37,7 +39,22 @@ module.exports = function(settings, cache) {
 			.then(()=> fs.promises.writeFile(pathSwap, settings.filesystem.serialize(val)))
 			.then(()=> fs.promises.utimes(pathSwap, new Date(), expiry || driver.settings.filesystem.fallbackDate))
 			.then(()=> fs.promises.unlink(path).catch(()=> null)) // Delete original and purposely ignore errors - original file probably didn't exist in the first place
-			.then(()=> fs.promises.rename(pathSwap, path)) // Move the swap file over the original path
+			.then(()=> new Promise((resolve, reject) => {
+				// BUGFIX: There is some weird sync issue with node where the file isn't flushed to disk so it can't be moved until it exists
+				//         This seems to be rare but nonetheless we have to keep checking for its existance before we can move give up
+				var tryCount = 0; // Number of times we have waited for the file to move successfully
+				var tryMove = ()=> fs.promises.rename(pathSwap, path) // Move the swap file over the original path
+					.then(()=> {
+						if (tryCount > 0) console.log(`DEBUG: Took ${tryCount} attempts to move swapfile over live file`);
+						resolve();
+					})
+					.catch(e => {
+						if (++tryCount >= driver.settings.moveFailTries) throw new Error(`Failed to move swap file max of ${driver.moveFailTries} times - ${e.toString()}`);
+						setTimeout(tryMove, driver.settings.moveFailInterval); // Schedule next attempt
+					})
+
+				tryMove(); // Kick off initial attempt to move the file
+			}))
 	};
 
 	driver.get = function(key, fallback) {
