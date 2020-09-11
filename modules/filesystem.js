@@ -47,7 +47,7 @@ module.exports = function(settings, cache) {
 						resolve();
 					})
 					.catch(e => {
-						if (++tryCount >= driver.settings.utimeFailTries) throw new Error(`Failed to UTime the swap file after max of ${driver.utimeFailTries} times - ${e.toString()}`);
+						if (++tryCount >= driver.settings.utimeFailTries) reject(`Failed to UTime the swap file after max of ${driver.utimeFailTries} times - ${e.toString()}`);
 						setTimeout(tryUtime, driver.settings.utimeFailInterval); // Schedule next attempt
 					})
 
@@ -64,7 +64,7 @@ module.exports = function(settings, cache) {
 						resolve();
 					})
 					.catch(e => {
-						if (++tryCount >= driver.settings.moveFailTries) throw new Error(`Failed to move swap file max of ${driver.moveFailTries} times - ${e.toString()}`);
+						if (++tryCount >= driver.settings.moveFailTries) reject(`Failed to move swap file max of ${driver.moveFailTries} times - ${e.toString()}`);
 						setTimeout(tryMove, driver.settings.moveFailInterval); // Schedule next attempt
 					})
 
