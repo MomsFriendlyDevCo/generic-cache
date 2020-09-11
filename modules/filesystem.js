@@ -16,8 +16,10 @@ module.exports = function(settings, cache) {
 			pathId: file => fspath.basename(file, '.cache.json'),
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
-			moveFailTries: 10,
+			moveFailTries: 30,
 			moveFailInterval: 100,
+			utimeFailTries: 30,
+			utimeFailInterval: 100,
 		},
 	});
 
@@ -37,7 +39,20 @@ module.exports = function(settings, cache) {
 					.then(()=> fs.promises.mkdir(fspath.dirname(pathSwap), {recursive: true})),
 			]))
 			.then(()=> fs.promises.writeFile(pathSwap, settings.filesystem.serialize(val)))
-			.then(()=> fs.promises.utimes(pathSwap, new Date(), expiry || driver.settings.filesystem.fallbackDate))
+			.then(()=> new Promise((resolve, reject) => {
+				var tryCount = 0; // Number of times we have waited for the file to Utime successfully
+				var tryUtime = ()=> fs.promises.utimes(pathSwap, new Date(), expiry || driver.settings.filesystem.fallbackDate)
+					.then(()=> {
+						if (tryCount > 0) console.warn(`CACHE: Took ${tryCount} attempts to UTime the swapfile`);
+						resolve();
+					})
+					.catch(e => {
+						if (++tryCount >= driver.settings.utimeFailTries) throw new Error(`Failed to UTime the swap file after max of ${driver.utimeFailTries} times - ${e.toString()}`);
+						setTimeout(tryUtime, driver.settings.utimeFailInterval); // Schedule next attempt
+					})
+
+				tryUtime(); // Kick off initial attempt to utime the file
+			}))
 			.then(()=> fs.promises.unlink(path).catch(()=> null)) // Delete original and purposely ignore errors - original file probably didn't exist in the first place
 			.then(()=> new Promise((resolve, reject) => {
 				// BUGFIX: There is some weird sync issue with node where the file isn't flushed to disk so it can't be moved until it exists
@@ -45,7 +60,7 @@ module.exports = function(settings, cache) {
 				var tryCount = 0; // Number of times we have waited for the file to move successfully
 				var tryMove = ()=> fs.promises.rename(pathSwap, path) // Move the swap file over the original path
 					.then(()=> {
-						if (tryCount > 0) console.log(`DEBUG: Took ${tryCount} attempts to move swapfile over live file`);
+						if (tryCount > 0) console.warn(`CACHE: Took ${tryCount} attempts to move swapfile over live file`);
 						resolve();
 					})
 					.catch(e => {

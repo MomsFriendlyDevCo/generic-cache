@@ -71,32 +71,34 @@ Set lots of options in the cache handler all at once or set a single key (dotted
 
 Valid options are:
 
-| Option                        | Type     | Default                            | Description                                                          |
-|-------------------------------|----------|------------------------------------|----------------------------------------------------------------------|
-| `init`                        | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
-| `cleanInit`                   | Boolean  | `false`                            | Run `clean()` in the background on each init                         |
-| `cleanAuto`                   | Boolean  | `false`                            | Run `autoClean()` automatically in the background on init            |
-| `cleanAutoInterval`           | String   | `"1h"`                             | Timestring to use when rescheduling `autoClean()`                    |
-| `keyMangle`                   | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
-| `modules`                     | Array    | `['memory']`                       | What modules to attempt to load                                      |
-| `serialize`                   | Function | `marshal.serialize`                | The serializing function to use when storing objects                 |
-| `deserialize`                 | Function | `marshal.deserialize`              | The deserializing function to use when restoring objects             |
-| `filesystem`                  | Object   | See below                          | Filesystem module specific settings                                  |
-| `filesystem.fallbackDate`     | Date     | `2500-01-01`                       | Fallback date to use as the filesystem expiry time                   |
-| `filesystem.memoryFuzz`       | Number   | `200`                              | How many Milliseconds bias to use when comparing the file ctime to the memory creation date |
-| `filesystem.moveFailTries`    | Number   | `10`                               | Maximum number of tries before giving up moving swap files over live files |
-| `filesystem.moveFailInterval` | Number   | `100`                              | Delay between retries                                                |
-| `filesystem.path`             | Function | os.tempdir + key + '.cache.json'   | How to calculate the file path to save. Defaults to the OS temp dir  |
-| `filesystem.pathSwap`         | Function | " + " + '.cache.swap.json'         | How to calculate the swap path to save. Defaults to the OS temp dir  |
-| `memcached`                   | Object   | See below                          | MemcacheD module specific settings                                   |
-| `memcached.server`            | String   | `'127.0.0.1:11211'`                | The MemcacheD server address to use                                  |
-| `memcached.lifetime`          | Number   | `1000*60` (1h)                     | The default expiry time, unless otherwise specified                  |
-| `memcached.options`           | Object   | `{retries:1,timeout:250}`          | Additional options passed to the MemcacheD client                    |
-| `mongodb`                     | Object   | See below                          | MongoDB module specific options                                      |
-| `mongodb.uri`                 | String   | `'mongodb://localhost/mfdc-cache'` | The MongoDB URI to connect to                                        |
-| `mongodb.collection`          | String   | `mfdcCaches`                       | The collection to store cache information within                     |
-| `mongodb.options`             | Object   | See code                           | Additional Mongo options to use when connecting                      |
-| `redis`                       | Object   | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis |
+| Option                         | Type     | Default                            | Description                                                          |
+|--------------------------------|----------|------------------------------------|----------------------------------------------------------------------|
+| `init`                         | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
+| `cleanInit`                    | Boolean  | `false`                            | Run `clean()` in the background on each init                         |
+| `cleanAuto`                    | Boolean  | `false`                            | Run `autoClean()` automatically in the background on init            |
+| `cleanAutoInterval`            | String   | `"1h"`                             | Timestring to use when rescheduling `autoClean()`                    |
+| `keyMangle`                    | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
+| `modules`                      | Array    | `['memory']`                       | What modules to attempt to load                                      |
+| `serialize`                    | Function | `marshal.serialize`                | The serializing function to use when storing objects                 |
+| `deserialize`                  | Function | `marshal.deserialize`              | The deserializing function to use when restoring objects             |
+| `filesystem`                   | Object   | See below                          | Filesystem module specific settings                                  |
+| `filesystem.fallbackDate`      | Date     | `2500-01-01`                       | Fallback date to use as the filesystem expiry time                   |
+| `filesystem.memoryFuzz`        | Number   | `200`                              | How many Milliseconds bias to use when comparing the file ctime to the memory creation date |
+| `filesystem.moveFailTries`     | Number   | `30`                               | Maximum number of tries before giving up moving swap files over live files |
+| `filesystem.moveFailInterval`  | Number   | `100`                              | Delay between retries                                                |
+| `filesystem.utimeFailTries`    | Number   | `30`                               | Maximum number of tries before giving up setting the utime on the swap file |
+| `filesystem.utimeFailInterval` | Number   | `100`                              | Delay between retries                                                |
+| `filesystem.path`              | Function | os.tempdir + key + '.cache.json'   | How to calculate the file path to save. Defaults to the OS temp dir  |
+| `filesystem.pathSwap`          | Function | " + " + '.cache.swap.json'         | How to calculate the swap path to save. Defaults to the OS temp dir  |
+| `memcached`                    | Object   | See below                          | MemcacheD module specific settings                                   |
+| `memcached.server`             | String   | `'127.0.0.1:11211'`                | The MemcacheD server address to use                                  |
+| `memcached.lifetime`           | Number   | `1000*60` (1h)                     | The default expiry time, unless otherwise specified                  |
+| `memcached.options`            | Object   | `{retries:1,timeout:250}`          | Additional options passed to the MemcacheD client                    |
+| `mongodb`                      | Object   | See below                          | MongoDB module specific options                                      |
+| `mongodb.uri`                  | String   | `'mongodb://localhost/mfdc-cache'` | The MongoDB URI to connect to                                        |
+| `mongodb.collection`           | String   | `mfdcCaches`                       | The collection to store cache information within                     |
+| `mongodb.options`              | Object   | See code                           | Additional Mongo options to use when connecting                      |
+| `redis`                        | Object   | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis |
 
 
 **NOTES**:
