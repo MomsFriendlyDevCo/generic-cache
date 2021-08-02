@@ -128,7 +128,7 @@ function Cache(options) {
 				if (!cache.activeModule) {
 					cache.emit('noMods');
 					debug('No module to load!');
-					throw new Error('No module available to load from list: ' + cache.modules.join(', '));
+					throw new Error('No module available to load from list: ' + cache.settings.modules.join(', '));
 				} else {
 					debug('Using module', cache.activeModule.id);
 				}
