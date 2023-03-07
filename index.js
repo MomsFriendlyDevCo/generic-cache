@@ -2,6 +2,7 @@ var _ = require('lodash');
 var crypto = require('crypto');
 var debug = require('debug')('cache');
 var events = require('events');
+var fs = require('fs/promises');
 var marshal = require('@momsfriendlydevco/marshal');
 var timestring = require('timestring');
 var util = require('util');
@@ -33,7 +34,7 @@ function Cache(options) {
 		cleanAuto: false,
 		cleanAutoInterval: '1h',
 		keyMangle: key => key,
-		keyQuery: q => /./,
+		keyQuery: q => /./, // eslint-disable-line no-unused-vars
 		modules: ['memory'],
 		serialize: v => marshal.serialize(v, {circular: false}),
 		deserialize: v => marshal.deserialize(v, {circular: false}),
@@ -339,7 +340,7 @@ function Cache(options) {
 			? cache.activeModule.destroy()
 			: null
 		)
-			.then(()=> new Promise((resolve, reject) => {
+			.then(()=> new Promise(resolve => {
 				debug('Destroy - modules terminated');
 
 				var dieAttempt = 0;
@@ -356,6 +357,53 @@ function Cache(options) {
 
 				tryDying();
 			}))
+	};
+
+
+	/**
+	* Helper function to read a local file into the cache
+	* Since disk files are (kind of) immutable this function works as both a getter (fetch file contents) and a setter (populate into cache)
+	* The file's stats are taken into account when reading so that changed files (filesize + date) get hydrated if needed
+	*
+	* @param {*} key The key to set
+	* @param {string} path The file path to read
+	* @param {date|number|string} [expiry] Optional expiry value
+	* @returns {Promise<String>} A promise with the UTF-8 contents of the file post-read
+	*
+	* @emits fromFileRead Emited as `({path, contents})` when a file read occurs both values can be mutated in place
+	*/
+	cache.fromFile = (key, path, expiry) => {
+		return Promise.resolve()
+			.then(()=> Promise.all([
+				cache.get(key),
+				fs.stat(path),
+			]))
+			.then(([cacheEntry, stats]) => {
+				if (
+					!cacheEntry // No cache entry - needs reading for the first time
+					|| cacheEntry.stats.size != stats.size // Size mismatch
+					|| cacheEntry.stats.mtimeMs != stats.mtimeMs // Modified time mismatch
+				) { // Create cache entry
+					return fs.readFile(path, 'utf8')
+						.then(contents => {
+							debug('read path', path, 'into', key);
+							this.emit('fromFileRead', {path, contents});
+
+							return cache.set(key, {
+								path,
+								contents,
+								stats,
+							}, expiry);
+						})
+						.then(newEntry => newEntry.contents) // Extract only contents
+				} else { // Cache exists and is up to date - just return contents
+					return cacheEntry.contents;
+				}
+			})
+			.catch(e => {
+				if (e === 'SKIP') return;
+				throw e;
+			});
 	};
 
 

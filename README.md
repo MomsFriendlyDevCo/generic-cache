@@ -185,6 +185,14 @@ This function waits for all set operations to complete before resolving.
 This function returns a promise.
 
 
+cache.fromFile(key, path, expiry)
+---------------------------------
+Helper function to read a local file into the cache
+Since disk files are (kind of) immutable this function works as both a getter (fetch file contents) and a setter (populate into cache)
+The file's stats are taken into account when reading so that changed files (filesize + date) get hydrated if needed
+This function returns a promise with the cached files contents.
+
+
 Debugging
 =========
 This module uses the [debug NPM module](https://github.com/visionmedia/debug) for debugging. To enable set the environment variable to `DEBUG=cache`.
