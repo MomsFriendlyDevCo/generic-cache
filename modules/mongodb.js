@@ -11,7 +11,6 @@ module.exports = function(settings, cache) {
 		mongodb: {
 			uri: 'mongodb://localhost/mfdc-cache',
 			options: {
-				useCreateIndex: true,
 				useNewUrlParser: true,
 				useUnifiedTopology: true,
 			},
