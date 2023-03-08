@@ -193,6 +193,26 @@ The file's stats are taken into account when reading so that changed files (file
 This function returns a promise with the cached files contents.
 
 
+cache.worker(options, worker)
+-----------------------------
+Simple wrapper middleware function which either returns the cached ID or runs a worker to calculate + cache a new one.
+NOTE: Since Promise execute immediately the worker must be a promise factory
+
+Options can either be a string (assumed as `options.id`) or an object made up of:
+
+| Option         | Type                  | Default     | Description                                                                                                                                                                                                                                                                                       |
+|----------------|-----------------------|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`           | `String`              |             | The ID of the cache to use                                                                                                                                                                                                                                                                        |
+| `enabled`      | `Boolean`             | `true`      | Whether to use the cache at all, set to false to debug the function worker each time                                                                                                                                                                                                              |
+| `expiry`       | `String`              | `"1h"`      | Any timesting valid entry to determine the maximum cache time                                                                                                                                                                                                                                     |
+| `rejectAs`     | `Boolean`             | `undefined` | Cache throwing promises as this value rather than repeating them each hit                                                                                                                                                                                                                         |
+| `retry`        | `Number`              | `0`         | If a promise rejects retry it this many times before giving up                                                                                                                                                                                                                                    |
+| `retryDelay`   | `Number` / `Function` | `100`       | Delay between promise retries, if a function is called as `(attempt, settings)` and expected to return the delay amount                                                                                                                                                                           |
+| `onCached`     | `Function`            |             | Sync function to called as `(settings, value)` when using a valid cached value instead of hydrating the worker, if any value except `undef` is returned it is used as the returned value                                                                                                          |
+| `onRetry`      | `Function`            |             | Sync function to call as `(error, attempt)` when a retryable operation fails, if any non-undefined is returned the retry cycle is aborted and the value used as the promise resolve value, if the function throws the entire promise retry cycle is exited with the thrown error as the rejection |
+| `invalidStore` | `*`                   |             | Value use to detect the absence of a value in the cache (so we can detect null/undefined values even though they are falsy)                                                                                                                                                                       |
+
+
 Debugging
 =========
 This module uses the [debug NPM module](https://github.com/visionmedia/debug) for debugging. To enable set the environment variable to `DEBUG=cache`.
