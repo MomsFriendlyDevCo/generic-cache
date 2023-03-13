@@ -1,79 +1,74 @@
 var _ = require('lodash');
 var redis = require('redis');
+var debug = require('debug')('cache:redis');
 
 module.exports = function(settings, cache) {
 	var driver = {};
 
 	driver.settings = _.defaultsDeep(settings, {
+		serialize: cache.settings.serialize,
+		deserialize: cache.settings.deserialize,
+
+		// NOTE: Expects these params: https://github.com/redis/node-redis/blob/master/docs/client-configuration.md
 		redis: {
-			serialize: cache.settings.serialize,
-			deserialize: cache.settings.deserialize,
-			retry_strategy: ()=> undefined, // Stop after first try
+			socket: {
+				reconnectStrategy: () => undefined, // Stop after first try
+			}
 		},
 	});
 
-	driver.canLoad = ()=> new Promise((resolve, reject) =>
-		driver.client = redis.createClient(driver.settings.redis)
-			.on('error', err => resolve(false))
-			.on('ready', ()=> resolve(true))
-	);
+	driver.canLoad = ()=> {
+		debug('canLoad', driver.settings.redis);
+		driver.client = redis.createClient(driver.settings.redis);
+		return driver.client.connect()
+			.then(() => true)
+			.catch(() => false);
+	};
 
-	driver.set = (key, val, expiry) => new Promise((resolve, reject) => {
+	driver.set = (key, val, expiry) => {
 		if (!expiry) {
-			driver.client.set(key, driver.settings.redis.serialize(val), err => err ? reject(err) : resolve(val));
+			return driver.client.set(key, driver.settings.redis.serialize(val));
 		} else {
-			driver.client.set(
+			return driver.client.set(
 				key,
 				driver.settings.redis.serialize(val),
 				'PX', // Prefix that next command is the timeout in MS
 				Math.floor(expiry ? expiry - Date.now() : driver.settings.memcached.lifetime), // Timeout in MS
-				err => err ? reject(err) : resolve(val)
 			);
 		}
-	});
+	};
 
-	driver.get = (key, fallback) => new Promise((resolve, reject) => {
-		driver.client.get(key, (err, val) => {
-			if (err) return reject(err);
-			val = val ? driver.settings.redis.deserialize(val) : undefined;
-			resolve(val !== undefined ? val : fallback);
-		});
-	});
+	driver.get = (key, fallback) => {
+		return driver.client.get(key)
+			.then(val => val ? driver.settings.deserialize(val) : fallback);
+	};
 
-	driver.size = key => new Promise((resolve, reject) => {
-		driver.client.strlen(key, (err, val) => {
-			if (err) return reject(err);
-			resolve(val);
-		});
-	});
+	driver.size = key => {
+		return driver.client.strlen(key);
+	};
 
-	driver.unset = key => new Promise((resolve, reject) => {
-		driver.client.del(key, err => err ? reject(err) : resolve());
-	});
+	driver.unset = key => {
+		return driver.client.del(key);
+	};
 
-	driver.list = ()=> new Promise((resolve, reject) => {
+	driver.list = ()=> {
 		var glob = driver.utilRegExpToGlob(driver.settings.keyQuery());
 		if (glob == '.') glob = '*'; // Convert single char (anything) matches to glob all
 
-		driver.client.keys(glob, (err, list) => {
-			if (err) return reject(err);
-
-			resolve(list.map(doc => ({
+		return driver.client.keys(glob)
+			.then(keys => keys.map(doc => ({
 				id: doc,
 			})));
-		});
-	});
+	};
 
-	driver.has = key => new Promise((resolve, reject) => {
-		driver.client.keys(key, (err, list) => {
-			if (err) return reject(err);
-			resolve(list.length > 0);
-		});
-	});
+	driver.has = key => {
+		return driver.client.keys(key)
+			.then(keys => (keys && keys.length > 0));
+	};
 
-	driver.destroy = ()=> new Promise((resolve, reject) => {
-		driver.client.quit(err => err ? reject(err) : resolve());
-	});
+	driver.destroy = ()=> {
+		return driver.client.quit();
+	};
 
 	/**
 	* Utility function to convert a RegExp to a Redis glob query
