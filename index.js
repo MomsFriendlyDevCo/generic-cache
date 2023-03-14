@@ -1,6 +1,6 @@
 var _ = require('lodash');
 var crypto = require('crypto');
-var debug = require('debug')('cache');
+var debug = require('debug')('cache:core');
 var events = require('events');
 var fs = require('fs/promises');
 var marshal = require('@momsfriendlydevco/marshal');
@@ -115,6 +115,7 @@ function Cache(options) {
 						.then(data => {
 							var [mod, canLoad] = data;
 
+							// FIXME: Finish all promises before deciding which is active
 							if (canLoad) {
 								cache.emit('loadedMod', moduleName);
 								cache.activeModule = mod;
