@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var memcached = require('memcached');
+var debug = require('debug')('cache:memcached');
 
 module.exports = function(settings, cache) {
 	var driver = {};

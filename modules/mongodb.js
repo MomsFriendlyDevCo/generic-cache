@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var mongoose = require('mongoose');
+var debug = require('debug')('cache:mongodb');
 
 module.exports = function(settings, cache) {
 	var driver = {};

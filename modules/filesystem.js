@@ -2,6 +2,7 @@ var _ = require('lodash');
 var fs = require('fs');
 var fspath = require('path');
 var os = require('os');
+var debug = require('debug')('cache:filesystem');
 
 module.exports = function(settings, cache) {
 	var driver = {};

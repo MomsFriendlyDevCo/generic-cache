@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var marshal = require('@momsfriendlydevco/marshal');
+var debug = require('debug')('cache:memory');
 
 module.exports = function(settings) {
 	var driver = {};
