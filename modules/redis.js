@@ -27,11 +27,11 @@ module.exports = function(settings, cache) {
 
 	driver.set = (key, val, expiry) => {
 		if (!expiry) {
-			return driver.client.set(key, driver.settings.redis.serialize(val));
+			return driver.client.set(key, driver.settings.serialize(val));
 		} else {
 			return driver.client.set(
 				key,
-				driver.settings.redis.serialize(val),
+				driver.settings.serialize(val),
 				'PX', // Prefix that next command is the timeout in MS
 				Math.floor(expiry ? expiry - Date.now() : driver.settings.memcached.lifetime), // Timeout in MS
 			);
@@ -44,7 +44,7 @@ module.exports = function(settings, cache) {
 	};
 
 	driver.size = key => {
-		return driver.client.strlen(key);
+		return driver.client.STRLEN(key);
 	};
 
 	driver.unset = key => {
