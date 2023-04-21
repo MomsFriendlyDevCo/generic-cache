@@ -49,8 +49,10 @@ function Cache(options) {
 	*/
 	cache.options = (key, val) => {
 		if (_.isPlainObject(key)) {
-			_.merge(cache.settings, key);
+			Object.entries(key)
+				.forEach(([key, val]) => cache.options(key, val))
 		} else {
+			if (key == 'module') key = 'module'; // Rewrite module plurals
 			_.set(cache.settings, key, val);
 		}
 		return cache;

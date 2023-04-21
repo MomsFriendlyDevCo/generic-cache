@@ -10,6 +10,7 @@ var Cache = require('@momsfriendlydevco/cache');
 
 var storage = new Cache({
 	modules: ['memcached', 'mongo', 'memory'], // What modules to try to load (in order of preference)
+	// module: 'redis', // Or just specify one
 });
 
 
@@ -78,7 +79,8 @@ Valid options are:
 | `cleanAuto`                    | Boolean  | `false`                            | Run `autoClean()` automatically in the background on init            |
 | `cleanAutoInterval`            | String   | `"1h"`                             | Timestring to use when rescheduling `autoClean()`                    |
 | `keyMangle`                    | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
-| `modules`                      | Array    | `['memory']`                       | What modules to attempt to load                                      |
+| `modules`                      | String / Array    | `['memory']` / `'memory'` | What module(s) to attempt to load                                    |
+| `module`                       | String / Array    | `['memory']` / `'memory'` | Alternate spelling of `modules`                                      |
 | `serialize`                    | Function | `marshal.serialize`                | The serializing function to use when storing objects                 |
 | `deserialize`                  | Function | `marshal.deserialize`              | The deserializing function to use when restoring objects             |
 | `filesystem`                   | Object   | See below                          | Filesystem module specific settings                                  |
