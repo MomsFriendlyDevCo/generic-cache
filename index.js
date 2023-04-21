@@ -1,11 +1,15 @@
-var _ = require('lodash');
-var crypto = require('crypto');
-var debug = require('debug')('cache');
-var events = require('events');
-var fs = require('fs/promises');
-var marshal = require('@momsfriendlydevco/marshal');
-var timestring = require('timestring');
-var util = require('util');
+import _ from 'lodash';
+import crypto from 'node:crypto';
+import Debug from 'debug';
+import {dirName} from '@momsfriendlydevco/es6';
+import events from 'node:events';
+import fs from 'node:fs/promises';
+import marshal from '@momsfriendlydevco/marshal';
+import timestring from 'timestring';
+import util from 'node:util';
+
+const __dirname = dirName();
+const debug = Debug('cache');
 
 /**
 * Constructor for a cache object
@@ -13,7 +17,7 @@ var util = require('util');
 * @returns {Cache} A cache object constructor
 */
 function Cache(options) {
-	var cache = this;
+	let cache = this;
 	cache.modules = ['memory']; // Shorthand method that drivers should load - these should exist in modules/
 
 	cache.modulePath = `${__dirname}/modules`
@@ -24,7 +28,7 @@ function Cache(options) {
 	* The currently active module we are using to actually cache things
 	* This is computed via init()
 	* Its spec should resemble a standard driver export (e.g. use `id` key to determine unique ID)
-	* @var {Object}
+	* @let {Object}
 	*/
 	cache.activeModule;
 
@@ -111,11 +115,11 @@ function Cache(options) {
 			.then(()=> cache.promiseSeries(
 				_.castArray(cache.settings.modules)
 					.map(moduleName => ()=> Promise.resolve()
-						.then(()=> require(`${cache.modulePath}/${moduleName}`))
-						.then(mod => mod.call(this, cache.settings, cache))
+						.then(()=> import(`${cache.modulePath}/${moduleName}.js`))
+						.then(mod => mod.default.call(this, cache.settings, cache))
 						.then(mod => Promise.resolve(mod.canLoad()).then(canLoad => [mod, canLoad]))
 						.then(data => {
-							var [mod, canLoad] = data;
+							let [mod, canLoad] = data;
 
 							if (canLoad) {
 								cache.emit('loadedMod', moduleName);
@@ -151,7 +155,7 @@ function Cache(options) {
 	*/
 	cache.set = (key, val, expiry) => {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
-		var expiryDate = cache.convertDateRelative(expiry);
+		let expiryDate = cache.convertDateRelative(expiry);
 		if (expiryDate < new Date()) throw new Error('Cache entry expiry date cannot be in the past');
 
 		if (_.isPlainObject(key)) {
@@ -182,7 +186,7 @@ function Cache(options) {
 		if (!cache.activeModule) throw new Error('No cache module loaded. Use cache.init() first');
 
 		if (_.isArray(key)) {
-			var result = {};
+			let result = {};
 			return Promise.all(key.map(k =>
 				Promise.resolve(cache.activeModule.get(cache.settings.keyMangle(k), fallback))
 					.then(v => result[k] = v)
@@ -273,7 +277,7 @@ function Cache(options) {
 		if (_.isFunction(cache.activeModule.clean)) { // Driver implments its own function
 			return Promise.resolve(cache.activeModule.clean());
 		} else if (cache.can('list')) { // Driver implements a list which we can use instead
-			var now = new Date();
+			let now = new Date();
 			return cache.activeModule.list()
 				.then(items => Promise.all(items.map(item =>
 					item.id && item.expiry && item.expiry < now
@@ -345,9 +349,9 @@ function Cache(options) {
 			.then(()=> new Promise(resolve => {
 				debug('Destroy - modules terminated');
 
-				var dieAttempt = 0;
-				var dieWait = 100;
-				var tryDying = ()=> {
+				let dieAttempt = 0;
+				let dieWait = 100;
+				let tryDying = ()=> {
 					if (cache.flushing > 0) {
 						debug(`Destory - still flushing. Attempt ${dieAttempt++}, will try again in ${dieWait}ms`);
 						dieWait *= 2; // Increase wait backoff
@@ -462,10 +466,10 @@ function Cache(options) {
 						.then(value => cache.set(settings.id, value, settings.expiry).then(()=> value)) // Cache output result and return
 						.then(value => resolve(value))
 						.catch(e => {
-							if (settings.hasOwnProperty('rejectAs')) {
+							if (settings.hasOwn('rejectAs')) {
 								debug('Cache func function refresh for', settings.id, 'threw', 'using fallback', settings.rejectAs);
 								return cache.set(settings.id, settings.rejectAs).then(()=> settings.rejectAs);
-							} else if (settings.hasOwnProperty('retry') && settings.hasOwnProperty('retry') > 0) {
+							} else if (settings.hasOwn('retry') && settings.hasOwn('retry') > 0) {
 								if (++attempt > settings.retry) { // Exhausted retry limit - reject
 									reject(e);
 								} else {
@@ -557,4 +561,4 @@ function Cache(options) {
 
 util.inherits(Cache, events.EventEmitter);
 
-module.exports = Cache;
+export default Cache;

@@ -1,5 +1,5 @@
-var Cache = require('..');
-var expect = require('chai').expect;
+import Cache from '../index.js';
+import {expect} from 'chai';
 
 describe('General tests', ()=> {
 

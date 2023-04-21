@@ -1,7 +1,7 @@
-var _ = require('lodash');
-var Cache = require('..');
-var expect = require('chai').expect;
-var mlog = require('mocha-logger');
+import _ from 'lodash';
+import Cache from '../index.js';
+import {expect} from 'chai';
+import mlog from 'mocha-logger';
 
 [
 	'filesystem',
@@ -70,7 +70,7 @@ var mlog = require('mocha-logger');
 
 		it('should restore native JS primitives', function() {
 			if (mod == 'mongodb') return this.skip(); // Mongo doesn't use a serializer so most of the special types will probably fail
-			var sampleObject = {
+			let sampleObject = {
 				arrays: [[1, 2, 3], [], [[[]]], [-10, 'Hello', Infinity]],
 				booleans: [true, false],
 				dates: [new Date(), new Date(Date.now() + _.random(100000, 999999)), new Date(Date.now() - _.random(100000, 999999))],
@@ -93,7 +93,7 @@ var mlog = require('mocha-logger');
 		});
 
 		it('should restore complex nested objects', ()=> {
-			var sampleObject = {
+			let sampleObject = {
 				foo: 'Foo',
 				bar: {
 					barFoo: _.random(10000, 99999),
@@ -204,12 +204,12 @@ var mlog = require('mocha-logger');
 
 		it('should handle autoCleaning', function(done) {
 			if (!cache.can('clean')) return this.skip();
-			var fired = {setup: 0, start: 0, end: 0, error: 0};
+			let fired = {setup: 0, start: 0, end: 0, error: 0};
 
-			var listenSetup = ()=> fired.setup++;
-			var listenStart = ()=> fired.start++;
-			var listenEnd = ()=> fired.end++;
-			var listenError = ()=> fired.error++;
+			let listenSetup = ()=> fired.setup++;
+			let listenStart = ()=> fired.start++;
+			let listenEnd = ()=> fired.end++;
+			let listenError = ()=> fired.error++;
 
 			cache.autoClean(100)
 				.on('autoCleanSet', listenSetup)

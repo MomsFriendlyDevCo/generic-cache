@@ -1,8 +1,8 @@
-var _ = require('lodash');
-var redis = require('redis');
+import _ from 'lodash';
+import redis from 'redis';
 
-module.exports = function(settings, cache) {
-	var driver = {};
+export default function(settings, cache) {
+	let driver = {};
 
 	driver.settings = _.defaultsDeep(settings, {
 		redis: {
@@ -12,9 +12,9 @@ module.exports = function(settings, cache) {
 		},
 	});
 
-	driver.canLoad = ()=> new Promise((resolve, reject) =>
+	driver.canLoad = ()=> new Promise(resolve =>
 		driver.client = redis.createClient(driver.settings.redis)
-			.on('error', err => resolve(false))
+			.on('error', ()=> resolve(false))
 			.on('ready', ()=> resolve(true))
 	);
 
@@ -52,7 +52,7 @@ module.exports = function(settings, cache) {
 	});
 
 	driver.list = ()=> new Promise((resolve, reject) => {
-		var glob = driver.utilRegExpToGlob(driver.settings.keyQuery());
+		let glob = driver.utilRegExpToGlob(driver.settings.keyQuery());
 		if (glob == '.') glob = '*'; // Convert single char (anything) matches to glob all
 
 		driver.client.keys(glob, (err, list) => {
@@ -89,4 +89,4 @@ module.exports = function(settings, cache) {
 			.replace(/\.\+/g, '*');
 
 	return driver;
-};
+}

@@ -1,21 +1,20 @@
-var _ = require('lodash');
-var Cache = require('..');
-var expect = require('chai').expect;
-var fs = require('fs');
-var fspath = require('path');
-var os = require('os');
+import Cache from '../index.js';
+import {expect} from 'chai';
+import fs from 'node:fs';
+import fsPath from 'node:path';
+import os from 'node:os';
 
 describe('Bad JSON data', function() {
 
-	var cache;
+	let cache;
 	before(()=> {
 		cache = new Cache({
 			modules: ['filesystem'],
-			path: (key, val, expiry) => path.join(os.tmpdir(), 'cache', `${key}.cache.json`),
-			pathSwap: (key, val, expiry) => path.join(os.tmpdir(), 'cache', `${key}.cache.swap.json`),
-			pathList: ()=> fspath.join(os.tmpdir(), 'cache'),
+			path: key => fsPath.join(os.tmpdir(), 'cache', `${key}.cache.json`),
+			pathSwap: key => fsPath.join(os.tmpdir(), 'cache', `${key}.cache.swap.json`),
+			pathList: ()=> fsPath.join(os.tmpdir(), 'cache'),
 			pathFilter: file => file.endsWith('.cache.json'),
-			pathId: file => fspath.basename(file, '.cache.json'),
+			pathId: file => fsPath.basename(file, '.cache.json'),
 		})
 
 		return cache.init();
@@ -28,11 +27,11 @@ describe('Bad JSON data', function() {
 
 	before('setup bad JSON contents', ()=> Promise.resolve()
 		.then(()=> fs.promises.writeFile( // Write bad JSON file contents
-			fspath.join(os.tmpdir(), 'cache', 'badjson.cache.json'),
+			fsPath.join(os.tmpdir(), 'cache', 'badjson.cache.json'),
 			'this is bad JSON content'
 		))
 		.then(()=> fs.promises.utimes( // Set the file date in the future so it doesn't count as expiring
-			fspath.join(os.tmpdir(), 'cache', 'badjson.cache.json'),
+			fsPath.join(os.tmpdir(), 'cache', 'badjson.cache.json'),
 			new Date('2050-01-01'),
 			new Date('2050-01-01'),
 		))

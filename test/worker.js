@@ -1,6 +1,6 @@
-var Cache = require('..');
-var expect = require('chai').expect;
-var mlog = require('mocha-logger');
+import Cache from '../index.js';
+import {expect} from 'chai';
+import mlog from 'mocha-logger';
 
 describe('cache.worker', ()=> {
 	let cache;

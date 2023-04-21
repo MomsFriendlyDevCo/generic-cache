@@ -1,19 +1,19 @@
-var _ = require('lodash');
-var fs = require('fs');
-var fspath = require('path');
-var os = require('os');
+import _ from 'lodash';
+import fs from 'node:fs';
+import fsPath from 'node:path';
+import os from 'node:os';
 
-module.exports = function(settings, cache) {
-	var driver = {};
+export default function(settings, cache) {
+	let driver = {};
 
 	driver.settings = _.defaultsDeep(settings, {
 		filesystem: {
 			fallbackDate: new Date('2500-01-01'),
-			path: (key, val, expiry) => fspath.join(os.tmpdir(), 'cache', key + '.cache.json'),
-			pathSwap: (key, val, expiry) => fspath.join(os.tmpdir(), 'cache', key + '.cache.swap.json'),
-			pathList: ()=> fspath.join(os.tmpdir(), 'cache'),
+			path: key => fsPath.join(os.tmpdir(), 'cache', key + '.cache.json'),
+			pathSwap: key => fsPath.join(os.tmpdir(), 'cache', key + '.cache.swap.json'),
+			pathList: ()=> fsPath.join(os.tmpdir(), 'cache'),
 			pathFilter: file => file.endsWith('.cache.json'),
-			pathId: file => fspath.basename(file, '.cache.json'),
+			pathId: file => fsPath.basename(file, '.cache.json'),
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
 			moveFailTries: 30,
@@ -26,22 +26,22 @@ module.exports = function(settings, cache) {
 	driver.canLoad = ()=> true; // Filesystem module is always available
 
 	driver.set = (key, val, expiry) => {
-		var path, pathSwap;
+		let path, pathSwap;
 
 		return Promise.resolve()
 			.then(()=> Promise.all([
 				Promise.resolve(driver.settings.filesystem.path(key, val, expiry))
 					.then(res => path = res)
-					.then(()=> fs.promises.mkdir(fspath.dirname(path), {recursive: true})),
+					.then(()=> fs.promises.mkdir(fsPath.dirname(path), {recursive: true})),
 
 				Promise.resolve(driver.settings.filesystem.pathSwap(key, val, expiry))
 					.then(res => pathSwap = res)
-					.then(()=> fs.promises.mkdir(fspath.dirname(pathSwap), {recursive: true})),
+					.then(()=> fs.promises.mkdir(fsPath.dirname(pathSwap), {recursive: true})),
 			]))
 			.then(()=> fs.promises.writeFile(pathSwap, settings.filesystem.serialize(val)))
 			.then(()=> new Promise((resolve, reject) => {
-				var tryCount = 0; // Number of times we have waited for the file to Utime successfully
-				var tryUtime = ()=> fs.promises.utimes(pathSwap, new Date(), expiry || driver.settings.filesystem.fallbackDate)
+				let tryCount = 0; // Number of times we have waited for the file to Utime successfully
+				let tryUtime = ()=> fs.promises.utimes(pathSwap, new Date(), expiry || driver.settings.filesystem.fallbackDate)
 					.then(()=> {
 						if (tryCount > 0) console.warn(`CACHE: Took ${tryCount} attempts to UTime the swapfile`);
 						resolve();
@@ -57,8 +57,8 @@ module.exports = function(settings, cache) {
 			.then(()=> new Promise((resolve, reject) => {
 				// BUGFIX: There is some weird sync issue with node where the file isn't flushed to disk so it can't be moved until it exists
 				//         This seems to be rare but nonetheless we have to keep checking for its existance before we can move give up
-				var tryCount = 0; // Number of times we have waited for the file to move successfully
-				var tryMove = ()=> fs.promises.rename(pathSwap, path) // Move the swap file over the original path
+				let tryCount = 0; // Number of times we have waited for the file to move successfully
+				let tryMove = ()=> fs.promises.rename(pathSwap, path) // Move the swap file over the original path
 					.then(()=> {
 						if (tryCount > 0) console.warn(`CACHE: Took ${tryCount} attempts to move swapfile over live file`);
 						resolve();
@@ -73,7 +73,7 @@ module.exports = function(settings, cache) {
 	};
 
 	driver.get = function(key, fallback) {
-		var path;
+		let path;
 
 		return Promise.resolve(driver.settings.filesystem.path(key, null, null))
 			.then(res => path = res)
@@ -101,7 +101,6 @@ module.exports = function(settings, cache) {
 
 	driver.unset = key =>
 		Promise.resolve(driver.settings.filesystem.path(key, null, null))
-			.then(res => path = res)
 			.then(path => fs.promises.unlink(path)) // Delete file - ignoring errors
 			.catch(()=> undefined);
 
@@ -128,7 +127,7 @@ module.exports = function(settings, cache) {
 			});
 
 	driver.list = ()=> {
-		var rootPath;
+		let rootPath;
 
 		return Promise.resolve(driver.settings.filesystem.pathList())
 			.then(res => rootPath = res)
@@ -137,7 +136,7 @@ module.exports = function(settings, cache) {
 				Promise.resolve(driver.settings.filesystem.pathFilter(file))
 					.then(isValid => isValid ? Promise.resolve(driver.settings.filesystem.pathId(file)) : false)
 					.then(id => id
-						? fs.promises.stat(fspath.join(rootPath, file))
+						? fs.promises.stat(fsPath.join(rootPath, file))
 							.then(stats => {
 								if (stats.mtime < new Date()) return false; // Filter out expired items
 								stats.id = id;
@@ -160,4 +159,4 @@ module.exports = function(settings, cache) {
 	driver.destroy = ()=> {};
 
 	return driver;
-};
+}

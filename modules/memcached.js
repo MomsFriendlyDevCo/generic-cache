@@ -1,8 +1,8 @@
-var _ = require('lodash');
-var memcached = require('memcached');
+import _ from 'lodash';
+import memcached from 'memcached';
 
-module.exports = function(settings, cache) {
-	var driver = {};
+export default function(settings, cache) {
+	let driver = {};
 	driver.memcacheClient;
 
 	driver.settings = _.defaultsDeep(settings, {
@@ -18,7 +18,7 @@ module.exports = function(settings, cache) {
 		},
 	});
 
-	driver.canLoad = ()=> new Promise((resolve, reject) => {
+	driver.canLoad = ()=> new Promise(resolve => {
 		driver.memcacheClient = new memcached(settings.memcached.server, settings.memcached.options);
 
 		// Make a dummy get request and see if it fails
@@ -26,7 +26,7 @@ module.exports = function(settings, cache) {
 	});
 
 	driver.set = (key, val, expiry) => new Promise((resolve, reject) => {
-		var expiryS = Math.floor((expiry ? expiry - Date.now() : driver.settings.memcached.lifetime) / 1000);
+		let expiryS = Math.floor((expiry ? expiry - Date.now() : driver.settings.memcached.lifetime) / 1000);
 		if (expiryS <= 0) {
 			return driver.unset(key).then(()=> resolve(val)); // Expiry is immediate anyway - just return value and exit
 		}
@@ -55,4 +55,4 @@ module.exports = function(settings, cache) {
 	};
 
 	return driver;
-};
+}

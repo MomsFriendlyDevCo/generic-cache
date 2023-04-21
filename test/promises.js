@@ -1,9 +1,9 @@
-var Cache = require('..');
-var expect = require('chai').expect;
+import Cache from '../index.js';
+import {expect} from 'chai';
 
 describe('promise test', ()=> {
 
-	var cache;
+	let cache;
 	before(()=> {
 		cache = new Cache({modules: 'memory'});
 		return cache.init();

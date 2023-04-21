@@ -7,7 +7,16 @@
     "test": "test"
   },
   "scripts": {
+    "lint": "eslint index.js modules test",
     "test": "mocha"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=16.14.0"
   },
   "keywords": [
     "cache",
@@ -27,6 +36,7 @@
   },
   "homepage": "https://github.com/MomsFriendlyDevCo/generic-cache",
   "dependencies": {
+    "@momsfriendlydevco/es6": "^1.2.1",
     "@momsfriendlydevco/marshal": "1.1.1",
     "debug": "^4.3.4",
     "lodash": "^4.17.21",
@@ -34,6 +44,7 @@
   },
   "devDependencies": {
     "chai": "^4.3.7",
+    "eslint": "^8.38.0",
     "mocha": "^10.2.0",
     "mocha-logger": "^1.0.8",
     "moment": "^2.29.4"
@@ -42,5 +53,17 @@
     "memcached": "^2.2.2",
     "mongoose": "^7.0.1",
     "redis": "^4.6.5"
+  },
+  "eslintConfig": {
+    "extends": "eslint:recommended",
+    "env": {
+      "es6": true,
+      "node": true,
+      "mocha": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 13,
+      "sourceType": "module"
+    }
   }
 }

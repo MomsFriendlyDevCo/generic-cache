@@ -1,8 +1,8 @@
-var _ = require('lodash');
-var marshal = require('@momsfriendlydevco/marshal');
+import _ from 'lodash';
+import marshal from '@momsfriendlydevco/marshal';
 
-module.exports = function(settings) {
-	var driver = {};
+export default function() {
+	let driver = {};
 	driver.store = {};
 
 	driver.canLoad = ()=> true; // Memory module is always available
@@ -18,8 +18,8 @@ module.exports = function(settings) {
 	};
 
 	driver.get = (key, fallback) => {
-		var existing = driver.store[key];
-		var now = new Date();
+		let existing = driver.store[key];
+		let now = new Date();
 		if (existing && (!existing.expiry || existing.expiry > now)) { // Is valid and has not yet expired
 			return existing.value;
 		} else if (existing && existing.expiry && existing.expiry <= now) { // Has expired - release memory
@@ -30,7 +30,7 @@ module.exports = function(settings) {
 	};
 
 	driver.size = key => {
-		var existing = driver.store[key];
+		let existing = driver.store[key];
 		if (!existing) return undefined;
 		return marshal.serialize(existing.value).length;
 	};
@@ -47,11 +47,11 @@ module.exports = function(settings) {
 		}));
 
 	driver.clean = ()=> {
-		var now = new Date();
-		driver.store = _.pickBy(driver.store, (s, k) => !s.expiry || s.expiry > now);
+		let now = new Date();
+		driver.store = _.pickBy(driver.store, s => !s.expiry || s.expiry > now);
 	};
 
 	driver.destroy = ()=> null;
 
 	return driver;
-};
+}

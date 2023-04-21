@@ -1,8 +1,8 @@
-var _ = require('lodash');
-var mongoose = require('mongoose');
+import _ from 'lodash';
+import mongoose from 'mongoose';
 
-module.exports = function(settings, cache) {
-	var driver = {};
+export default function(settings, cache) {
+	let driver = {};
 
 	driver.schema;
 	driver.model;
@@ -40,7 +40,7 @@ module.exports = function(settings, cache) {
 	driver.set = (key, value, expiry) =>
 		driver.model.findOne({key})
 			.then(existing => {
-				if (this.existing) {
+				if (existing) {
 					return this.existing.save({value: settings.mongodb.serialize(value), $ignoreModified: true});
 				} else {
 					return driver.model.create({key, value: settings.mongodb.serialize(value), expiry, created: new Date()});
@@ -94,4 +94,4 @@ module.exports = function(settings, cache) {
 	driver.destroy = ()=> mongoose.connection.close();
 
 	return driver;
-};
+}

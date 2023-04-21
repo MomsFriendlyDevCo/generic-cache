@@ -1,6 +1,9 @@
-var Cache = require('..');
-var expect = require('chai').expect;
-var mlog = require('mocha-logger');
+import Cache from '../index.js';
+import {dirName} from '@momsfriendlydevco/es6';
+import {expect} from 'chai';
+import mlog from 'mocha-logger';
+
+const __filename = `${dirName()}/fromFile.js`;
 
 describe('cache.fromFile', ()=> {
 	let cache;
@@ -19,9 +22,9 @@ describe('cache.fromFile', ()=> {
 
 		return Promise.resolve()
 			.then(()=> cache.fromFile('testfile', __filename))
-			.then(contents => expect(contents).to.match(/^var Cache = /))
+			.then(contents => expect(contents).to.match(/^import Cache from /))
 			.then(()=> cache.fromFile('testfile', __filename))
-			.then(contents => expect(contents).to.match(/^var Cache = /))
+			.then(contents => expect(contents).to.match(/^import Cache from /))
 			.then(()=> expect(reads).to.equal(1))
 	});
 
