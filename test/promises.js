@@ -1,4 +1,4 @@
-import Cache from '../index.js';
+import Cache from '#cache';
 import {expect} from 'chai';
 
 describe('promise test', ()=> {

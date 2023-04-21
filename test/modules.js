@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import Cache from '../index.js';
+import Cache from '#cache';
 import {expect} from 'chai';
 import mlog from 'mocha-logger';
 
