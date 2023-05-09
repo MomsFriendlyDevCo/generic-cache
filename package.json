@@ -45,7 +45,7 @@
   "homepage": "https://github.com/MomsFriendlyDevCo/generic-cache",
   "dependencies": {
     "@momsfriendlydevco/es6": "^1.2.1",
-    "@momsfriendlydevco/marshal": "1.1.1",
+    "@momsfriendlydevco/marshal": "2.0.0",
     "debug": "^4.3.4",
     "lodash": "^4.17.21",
     "timestring": "^7.0.0"
