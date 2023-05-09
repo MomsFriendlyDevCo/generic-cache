@@ -14,6 +14,10 @@ var storage = new Cache({
 });
 
 
+// Setup the first available caching system
+storage.init();
+
+
 // Set something (key, val, [expiry])
 storage.set('myKey', 'myValue', '1h').then(setVal => ...)
 
