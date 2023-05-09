@@ -48,19 +48,19 @@
     "@momsfriendlydevco/marshal": "1.1.1",
     "debug": "^4.3.4",
     "lodash": "^4.17.21",
-    "timestring": "^6.0.0"
+    "timestring": "^7.0.0"
   },
   "devDependencies": {
     "chai": "^4.3.7",
-    "eslint": "^8.38.0",
+    "eslint": "^8.40.0",
     "mocha": "^10.2.0",
     "mocha-logger": "^1.0.8",
     "moment": "^2.29.4"
   },
   "optionalDependencies": {
     "memcached": "^2.2.2",
-    "mongoose": "^7.0.1",
-    "redis": "^4.6.5"
+    "mongoose": "^7.1.0",
+    "redis": "^4.6.6"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",
