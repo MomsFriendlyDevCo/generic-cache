@@ -1,21 +1,35 @@
+/**
+* Run tests on all available modules, in series
+*
+* @param {String} [process.env.TEST_MODULES] CSV of specific modules to run, if omitted all are used
+*
+* @example Test only the Redis + Memory modules
+* TEST_MODULES=redis,memory mocha test/modules
+*/
+
 import _ from 'lodash';
 import Cache from '#cache';
 import {expect} from 'chai';
 import mlog from 'mocha-logger';
 
-[
-	'filesystem',
-	'memory',
-	'memcached',
-	'mongodb',
-	'redis',
-].forEach(mod => {
+( // Determine which modules to test
+	process.env.TEST_MODULES
+		? process.env.TEST_MODULES.split(/\s*,\s*/)
+		: [
+			'filesystem',
+			'memory',
+			'memcached',
+			'mongodb',
+			'redis',
+		]
+).forEach(mod => {
 
 	describe(`${mod} module`, function() {
 		let cache;
 		before(()=> {
 			this.timeout(5000);
-			cache = new Cache({module: mod, keyMangle: key => 'blah' + key})
+			// NOTE: This instance may report things known by other instance. Using "mod" in key restricts it to own items
+			cache = new Cache({modules: mod, keyMangle: key => mod + key})
 				.on('loadedMod', mod => mlog.log('Loaded mod', mod))
 				.on('noMods', ()=> {
 					mlog.log('Module unavailable');
@@ -118,7 +132,7 @@ import mlog from 'mocha-logger';
 				.then(()=> cache[cache.can('size') ? 'size' : 'get']('testNested'))
 				.then(val => {
 					if (cache.can('size')) expect(val).to.be.at.least(800);
-					return cache.get('testNested');
+					return cache.get('testNested'); // TODO: We just "get" above, now "get" again; Could simply test in this block
 				})
 				.then(val => expect(val).to.deep.equal(sampleObject))
 				.then(()=> cache.unset('testNested'))
@@ -132,7 +146,7 @@ import mlog from 'mocha-logger';
 					expect(res).to.have.length.above(2);
 					res.forEach(i => {
 						expect(i).to.have.property('id');
-						expect(i.id).to.be.oneOf(['blahfoo', 'blahbar', 'blahbaz']);
+						expect(i.id).to.be.oneOf([mod + 'foo', mod + 'bar', mod + 'baz']);
 					});
 				});
 		});
@@ -151,12 +165,13 @@ import mlog from 'mocha-logger';
 				.then(vals => expect(vals).to.be.deep.equal({unFoo: undefined, unBar: undefined, unBaz: undefined}))
 		);
 
-		it('should expire an entry with 100ms', ()=>
-			cache.set('quzz', 'Quzz!', new Date(Date.now() + 100))
-				.then(()=> new Promise(resolve => setTimeout(resolve, 101)))
+		it('should expire an entry with 100ms', function() {
+			if (mod == 'redis') return this.skip(); // Redis doesnt like <1s expire times as of NPM Redis@4.6.6 / Redis Server@7.0.11 - MC 2023-05-10
+			return cache.set('quzz', 'Quzz!', new Date(Date.now() + 100))
+				.then(()=> new Promise(resolve => setTimeout(resolve, 120)))
 				.then(()=> cache.get('quzz'))
 				.then(val => expect(val).to.be.undefined)
-		);
+		});
 
 		it('should expire an entry within 1s', ()=>
 			cache.set('flarp', 'Flarp!', '1s')
