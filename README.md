@@ -2,20 +2,29 @@
 ========================
 Generic caching component.
 
-This module is a very low-level caching component designed to store, retrieve, expire and cleanup a simple key-value storage.
+This module is a low-level caching component designed to store, retrieve, expire and cleanup a simple key-value storage.
 
+Features:
+
+* Fully ES6 + promise compliant
+* Isomorphic back-end (Node) + front-end (Browser) support - just import and use
+* Module support for most main caching systems
+* Expiry based storage for all setters / getters
+* Automatic cleaning
+* Function wrapping and memorization support (via `cache.worker()`)
+* File contents caching (via `cache.fromFile()`, Node only)
 
 ```javascript
-var Cache = require('@momsfriendlydevco/cache');
+import Cache from '@momsfriendlydevco/cache';
 
-var storage = new Cache({
+const storage = new Cache({
 	modules: ['memcached', 'mongo', 'memory'], // What modules to try to load (in order of preference)
 	// module: 'redis', // Or just specify one
 });
 
 
 // Setup the first available caching system
-storage.init();
+await storage.init();
 
 
 // Set something (key, val, [expiry])
@@ -40,13 +49,14 @@ All methods return a promise.
 Supported Caching Drivers
 =========================
 
-| Driver     | Requires         | Maximum object size | Serializer | list() Support | has() support | size() support | clean() Support |
-|------------|------------------|---------------------|------------|----------------|---------------|----------------|------------------|
-| filesystem | Writable FS area | Infinite            | Yes        | Yes            | Yes           | Yes            |                  |
-| memcached  | MemcacheD daemon | 1mb                 | Yes        |                |               |                |                  |
-| memory     | Nothing          | Infinite            | Not needed | Yes            | Yes           | Yes            | Yes              |
-| mongodb    | MongoDB daemon   | 16mb                | Disabled   | Yes            | Yes           |                | Yes              |
-| redis      | Redis daemon     | 512mb               | Yes        | Yes            | Yes           | Yes            |                  |
+| Driver       | Requires         | Maximum object size | Serializer | list() | has() | size() | clean() |
+|--------------|------------------|---------------------|------------|--------|-------|--------|---------|
+| filesystem   | Writable FS area | Infinite            | Yes        | Yes    | Yes   | Yes    |         |
+| memcached    | MemcacheD daemon | 1mb                 | Yes        |        |       |        |         |
+| memory       | Nothing          | Infinite            | Not needed | Yes    | Yes   | Yes    | Yes     |
+| mongodb      | MongoDB daemon   | 16mb                | Disabled   | Yes    | Yes   |        | Yes     |
+| redis        | Redis daemon     | 512mb               | Yes        | Yes    | Yes   | Yes    |         |
+| localstorage | Browser          | Infinite            | Yes        | Yes    | Yes   | Yes    | Yes     |
 
 
 **NOTES**:
@@ -56,6 +66,7 @@ Supported Caching Drivers
 * Some caching systems (notably MemcacheD) automatically clean entries
 * For most modules the storage values are encoded / decoded via [marshal](https://github.com/MomsFriendlyDevCo/marshal). This means that complex JS primitives such as Dates, Sets etc. can be stored without issue. This is disabled in the case of MongoDB by default but can be enabled if needed
 * When `has()` querying is not supported by the module a `get()` operation will be performed and the result mangled into a boolean instead, this ensures that all modules support `has()` at the expense of efficiency
+* The localstorage module is only only available on the browser release
 
 
 API
