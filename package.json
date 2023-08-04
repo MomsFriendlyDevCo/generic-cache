@@ -58,6 +58,7 @@
     "moment": "^2.29.4"
   },
   "optionalDependencies": {
+    "@supabase/supabase-js": "^2.31.0",
     "memcached": "^2.2.2",
     "mongoose": "^7.1.0",
     "redis": "^4.6.6"

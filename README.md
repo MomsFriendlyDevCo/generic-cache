@@ -56,6 +56,7 @@ Supported Caching Drivers
 | memory       | Nothing          | Infinite            | Not needed | Yes    | Yes   | Yes    | Yes     |
 | mongodb      | MongoDB daemon   | 16mb                | Disabled   | Yes    | Yes   |        | Yes     |
 | redis        | Redis daemon     | 512mb               | Yes        | Yes    | Yes   | Yes    |         |
+| supabase     | Supabase account | Infinite            | Disabled   | Yes    | Yes   |        | Yes     |
 | localstorage | Browser          | Infinite            | Yes        | Yes    | Yes   | Yes    | Yes     |
 
 
@@ -67,6 +68,7 @@ Supported Caching Drivers
 * For most modules the storage values are encoded / decoded via [marshal](https://github.com/MomsFriendlyDevCo/marshal). This means that complex JS primitives such as Dates, Sets etc. can be stored without issue. This is disabled in the case of MongoDB by default but can be enabled if needed
 * When `has()` querying is not supported by the module a `get()` operation will be performed and the result mangled into a boolean instead, this ensures that all modules support `has()` at the expense of efficiency
 * The localstorage module is only only available on the browser release
+* The Supabase module by default requires a simple key=>jsonb table setup with a created + expires column. The simplest definition of this would be `create table cache (id character varying not null, created_at timestamp with time zone null default now(), expires_at timestamp with time zone null, data jsonb null, constraint cache_pkey primary key (id))`
 
 
 API
@@ -87,35 +89,42 @@ Set lots of options in the cache handler all at once or set a single key (dotted
 
 Valid options are:
 
-| Option                         | Type     | Default                            | Description                                                          |
-|--------------------------------|----------|------------------------------------|----------------------------------------------------------------------|
-| `init`                         | Boolean  | `true`                             | Whether to automatically run cache.init() when constructing          |
-| `cleanInit`                    | Boolean  | `false`                            | Run `clean()` in the background on each init                         |
-| `cleanAuto`                    | Boolean  | `false`                            | Run `autoClean()` automatically in the background on init            |
-| `cleanAutoInterval`            | String   | `"1h"`                             | Timestring to use when rescheduling `autoClean()`                    |
-| `keyMangle`                    | Function | `key => key`                       | How to rewrite the requested key before get / set / unset operations |
-| `modules`                      | String / Array    | `['memory']` / `'memory'` | What module(s) to attempt to load                                    |
-| `module`                       | String / Array    | `['memory']` / `'memory'` | Alternate spelling of `modules`                                      |
-| `serialize`                    | Function | `marshal.serialize`                | The serializing function to use when storing objects                 |
-| `deserialize`                  | Function | `marshal.deserialize`              | The deserializing function to use when restoring objects             |
-| `filesystem`                   | Object   | See below                          | Filesystem module specific settings                                  |
-| `filesystem.fallbackDate`      | Date     | `2500-01-01`                       | Fallback date to use as the filesystem expiry time                   |
-| `filesystem.memoryFuzz`        | Number   | `200`                              | How many Milliseconds bias to use when comparing the file ctime to the memory creation date |
-| `filesystem.moveFailTries`     | Number   | `30`                               | Maximum number of tries before giving up moving swap files over live files |
-| `filesystem.moveFailInterval`  | Number   | `100`                              | Delay between retries                                                |
-| `filesystem.utimeFailTries`    | Number   | `30`                               | Maximum number of tries before giving up setting the utime on the swap file |
-| `filesystem.utimeFailInterval` | Number   | `100`                              | Delay between retries                                                |
-| `filesystem.path`              | Function | os.tempdir + key + '.cache.json'   | How to calculate the file path to save. Defaults to the OS temp dir  |
-| `filesystem.pathSwap`          | Function | " + " + '.cache.swap.json'         | How to calculate the swap path to save. Defaults to the OS temp dir  |
-| `memcached`                    | Object   | See below                          | MemcacheD module specific settings                                   |
-| `memcached.server`             | String   | `'127.0.0.1:11211'`                | The MemcacheD server address to use                                  |
-| `memcached.lifetime`           | Number   | `1000*60` (1h)                     | The default expiry time, unless otherwise specified                  |
-| `memcached.options`            | Object   | `{retries:1,timeout:250}`          | Additional options passed to the MemcacheD client                    |
-| `mongodb`                      | Object   | See below                          | MongoDB module specific options                                      |
-| `mongodb.uri`                  | String   | `'mongodb://localhost/mfdc-cache'` | The MongoDB URI to connect to                                        |
-| `mongodb.collection`           | String   | `mfdcCaches`                       | The collection to store cache information within                     |
-| `mongodb.options`              | Object   | See code                           | Additional Mongo options to use when connecting                      |
-| `redis`                        | Object   | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis |
+| Option                         | Type           | Default                                                                            | Description                                                                                 |
+|--------------------------------|----------------|------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `init`                         | Boolean        | `true`                                                                             | Whether to automatically run cache.init() when constructing                                 |
+| `cleanInit`                    | Boolean        | `false`                                                                            | Run `clean()` in the background on each init                                                |
+| `cleanAuto`                    | Boolean        | `false`                                                                            | Run `autoClean()` automatically in the background on init                                   |
+| `cleanAutoInterval`            | String         | `"1h"`                                                                             | Timestring to use when rescheduling `autoClean()`                                           |
+| `keyMangle`                    | Function       | `key => key`                                                                       | How to rewrite the requested key before get / set / unset operations                        |
+| `modules`                      | String / Array | `['memory']` / `'memory'`                                                          | What module(s) to attempt to load                                                           |
+| `module`                       | String / Array | `['memory']` / `'memory'`                                                          | Alternate spelling of `modules`                                                             |
+| `serialize`                    | Function       | `marshal.serialize`                                                                | The serializing function to use when storing objects                                        |
+| `deserialize`                  | Function       | `marshal.deserialize`                                                              | The deserializing function to use when restoring objects                                    |
+| `filesystem`                   | Object         | See below                                                                          | Filesystem module specific settings                                                         |
+| `filesystem.fallbackDate`      | Date           | `2500-01-01`                                                                       | Fallback date to use as the filesystem expiry time                                          |
+| `filesystem.memoryFuzz`        | Number         | `200`                                                                              | How many Milliseconds bias to use when comparing the file ctime to the memory creation date |
+| `filesystem.moveFailTries`     | Number         | `30`                                                                               | Maximum number of tries before giving up moving swap files over live files                  |
+| `filesystem.moveFailInterval`  | Number         | `100`                                                                              | Delay between retries                                                                       |
+| `filesystem.utimeFailTries`    | Number         | `30`                                                                               | Maximum number of tries before giving up setting the utime on the swap file                 |
+| `filesystem.utimeFailInterval` | Number         | `100`                                                                              | Delay between retries                                                                       |
+| `filesystem.path`              | Function       | os.tempdir + key + '.cache.json'                                                   | How to calculate the file path to save. Defaults to the OS temp dir                         |
+| `filesystem.pathSwap`          | Function       | " + " + '.cache.swap.json'                                                         | How to calculate the swap path to save. Defaults to the OS temp dir                         |
+| `memcached`                    | Object         | See below                                                                          | MemcacheD module specific settings                                                          |
+| `memcached.server`             | String         | `'127.0.0.1:11211'`                                                                | The MemcacheD server address to use                                                         |
+| `memcached.lifetime`           | Number         | `1000*60` (1h)                                                                     | The default expiry time, unless otherwise specified                                         |
+| `memcached.options`            | Object         | `{retries:1,timeout:250}`                                                          | Additional options passed to the MemcacheD client                                           |
+| `mongodb`                      | Object         | See below                                                                          | MongoDB module specific options                                                             |
+| `mongodb.uri`                  | String         | `'mongodb://localhost/mfdc-cache'`                                                 | The MongoDB URI to connect to                                                               |
+| `mongodb.collection`           | String         | `mfdcCaches`                                                                       | The collection to store cache information within                                            |
+| `mongodb.options`              | Object         | See code                                                                           | Additional Mongo options to use when connecting                                             |
+| `redis`                        | Object         | [See Redis module settings](https://www.npmjs.com/package/redis#rediscreateclient) | Settings passed to Redis                                                                    |
+| `supabase`                     | Object         |                                                                                    | See below                                                                                   | Supabase config |
+| `supabase.uri`                 | String         | `null`                                                                             | The Supabase URL to communicate with                                                        |
+| `supabase.apikey`              | String         | `null`                                                                             | The Supabase API key to use                                                                 |
+| `supabase.options`             | Object         | `{}`                                                                               | Additional options to pass during the connection                                            |
+| `supabase.table`               | String         | `'cache'`                                                                          | The caching table to use                                                                    |
+| `supabase.colId`               | String         | `'id'`                                                                             | The column ID to use (should be an indexed key)                                             |
+| `supabase.colData`             | String         | `'data'` The JSONB column used to stash data                                       |
 
 
 **NOTES**:

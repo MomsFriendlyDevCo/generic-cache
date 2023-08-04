@@ -22,6 +22,7 @@ import mlog from 'mocha-logger';
 			'memcached',
 			'mongodb',
 			'redis',
+			'supabase',
 		]
 ).filter(mod => config[mod].enabled).forEach(mod => {
 
@@ -32,7 +33,7 @@ import mlog from 'mocha-logger';
 			// NOTE: This instance may report things known by other instance. Using "mod" in key restricts it to own items
 			cache = new Cache({
 				modules: mod,
-				keyMangle: key => mod + key,
+				keyMangle: key => mod + '-' + key,
 				...config,
 			})
 				.on('loadedMod', mod => mlog.log('Loaded mod', mod))
@@ -88,7 +89,8 @@ import mlog from 'mocha-logger';
 		);
 
 		it('should restore native JS primitives', function() {
-			if (mod == 'mongodb') return this.skip(); // Mongo doesn't use a serializer so most of the special types will probably fail
+			if (config[mod].testSerializer === false) return this.skip();
+
 			let sampleObject = {
 				arrays: [[1, 2, 3], [], [[[]]], [-10, 'Hello', Infinity]],
 				booleans: [true, false],
@@ -151,7 +153,7 @@ import mlog from 'mocha-logger';
 					expect(res).to.have.length.above(2);
 					res.forEach(i => {
 						expect(i).to.have.property('id');
-						expect(i.id).to.be.oneOf([mod + 'foo', mod + 'bar', mod + 'baz']);
+						expect(i.id).to.be.oneOf([mod + '-foo', mod + '-bar', mod + '-baz']);
 					});
 				});
 		});
@@ -172,6 +174,7 @@ import mlog from 'mocha-logger';
 
 		it('should expire an entry with 100ms', function() {
 			if (mod == 'redis') return this.skip(); // Redis doesnt like <1s expire times as of NPM Redis@4.6.6 / Redis Server@7.0.11 - MC 2023-05-10
+
 			return cache.set('quzz', 'Quzz!', new Date(Date.now() + 100))
 				.then(()=> new Promise(resolve => setTimeout(resolve, 120)))
 				.then(()=> cache.get('quzz'))
