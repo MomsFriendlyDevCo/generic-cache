@@ -30,7 +30,11 @@ import mlog from 'mocha-logger';
 		before(()=> {
 			this.timeout(5000);
 			// NOTE: This instance may report things known by other instance. Using "mod" in key restricts it to own items
-			cache = new Cache({modules: mod, keyMangle: key => mod + key})
+			cache = new Cache({
+				modules: mod,
+				keyMangle: key => mod + key,
+				...config,
+			})
 				.on('loadedMod', mod => mlog.log('Loaded mod', mod))
 				.on('noMods', ()=> {
 					mlog.log('Module unavailable');
