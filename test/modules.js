@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import Cache from '#cache';
+import config from './config.js';
 import {expect} from 'chai';
 import mlog from 'mocha-logger';
 
@@ -22,7 +23,7 @@ import mlog from 'mocha-logger';
 			'mongodb',
 			'redis',
 		]
-).forEach(mod => {
+).filter(mod => config[mod].enabled).forEach(mod => {
 
 	describe(`${mod} module`, function() {
 		let cache;
