@@ -25,7 +25,6 @@ import mlog from 'mocha-logger';
 			'supabase',
 		]
 ).filter(mod => config[mod].enabled).forEach(mod => {
-
 	describe(`${mod} module`, function() {
 		let cache;
 		before(()=> {

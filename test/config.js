@@ -3,7 +3,7 @@
 */
 export default {
 	filesystem: {
-		enabled: true,
+		enabled: false,
 	},
 	memory: {
 		enabled: true,

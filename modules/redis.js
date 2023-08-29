@@ -24,8 +24,6 @@ export default function(settings, cache) {
 		if (!expiry) {
 			return driver.client.set(key, driver.settings.serialize(val));
 		} else {
-			let payload = [
-			];
 			return driver.client.set(...[
 				key,
 				driver.settings.serialize(val),
@@ -64,6 +62,23 @@ export default function(settings, cache) {
 		return driver.client.keys(key)
 			.then(keys => (keys && keys.length > 0));
 	};
+
+	driver.lockAquire = (key, expiry) =>
+		driver.client.set(...[
+			key,
+			'LOCK',
+			'NX', // Only set if non-existant
+			...(expiry ? [
+				'PXAT', // Prefix that next operand expiry date (in milliseconds)
+				expiry.getTime() // Millisecond date to timeout
+			] : []),
+		])
+		.then(result => result === 'OK');
+
+	driver.lockRelease = key => driver.unset(key)
+		.then(res => res === 1);
+
+	driver.lockExists = driver.has;
 
 	driver.destroy = ()=> {
 		return driver.client.quit();

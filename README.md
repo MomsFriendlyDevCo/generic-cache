@@ -49,15 +49,15 @@ All methods return a promise.
 Supported Caching Drivers
 =========================
 
-| Driver       | Requires         | Maximum object size | Serializer | list() | has() | size() | clean() |
-|--------------|------------------|---------------------|------------|--------|-------|--------|---------|
-| filesystem   | Writable FS area | Infinite            | Yes        | Yes    | Yes   | Yes    |         |
-| memcached    | MemcacheD daemon | 1mb                 | Yes        |        |       |        |         |
-| memory       | Nothing          | Infinite            | Not needed | Yes    | Yes   | Yes    | Yes     |
-| mongodb      | MongoDB daemon   | 16mb                | Disabled   | Yes    | Yes   |        | Yes     |
-| redis        | Redis daemon     | 512mb               | Yes        | Yes    | Yes   | Yes    |         |
-| supabase     | Supabase account | Infinite            | Disabled   | Yes    | Yes   |        | Yes     |
-| localstorage | Browser          | Infinite            | Yes        | Yes    | Yes   | Yes    | Yes     |
+| Driver       | Requires         | Maximum object size | Serializer | list() | has() | size() | clean() | lock*() |
+|--------------|------------------|---------------------|------------|--------|-------|--------|---------|---------|
+| filesystem   | Writable FS area | Infinite            | Yes        | Yes    | Yes   | Yes    |         |         |
+| memcached    | MemcacheD daemon | 1mb                 | Yes        |        |       |        |         |         |
+| memory       | Nothing          | Infinite            | Not needed | Yes    | Yes   | Yes    | Yes     |         |
+| mongodb      | MongoDB daemon   | 16mb                | Disabled   | Yes    | Yes   |        | Yes     |         |
+| redis        | Redis daemon     | 512mb               | Yes        | Yes    | Yes   | Yes    |         | Yes     |
+| supabase     | Supabase account | Infinite            | Disabled   | Yes    | Yes   |        | Yes     |         |
+| localstorage | Browser          | Infinite            | Yes        | Yes    | Yes   | Yes    | Yes     |         |
 
 
 **NOTES**:
@@ -209,6 +209,43 @@ cache.destroy()
 Politely close all driver resource handles before shutting down.
 This function waits for all set operations to complete before resolving.
 This function returns a promise.
+
+
+cache.lockAquire(key, expiry)
+-----------------------------
+Request the creation of a unique lock specified by the hashed version of the key (with an optional expiry).
+This function returns a promise with a boolean indicating if the lock aquire was successful.
+
+
+cache.lockRelease(key)
+----------------------
+Release an aquired lock.
+This function returns a promise.
+
+
+cache.lockExists(key)
+---------------------
+Query the status of a lock.
+This function returns a promise with a boolean indicating if the lock exists.
+
+
+cache.lockSpin(key, options)
+----------------------------
+Returns a Promise which repeatedly checks if a key exists a given number of times (with configurable retires / backoff).
+If the key is eventually available, it is created otherwise this function throws.
+
+Options are:
+
+| Option        | Type       | Default | Description                                                                                                                                                                         |
+|---------------|------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `expiry`      | TimeString |         | Optional expiry for the lock                                                                                                                                                        |
+| `retries`     | `Number`   | `5`     | Maximum number of retries to attempt                                                                                                                                                |
+| `delay`       | `Number`   | `250`   | Time in milliseconds to wait for a lock using the default backoff system                                                                                                            |
+| `create`      | `Boolean`  | `true`  | If a lock can be allocated, auto allocate it before resuming                                                                                                                        |
+| `backoff`     | `Function` |         | Function to calculate timing backoff, should return the delay to use. Called as `(attempt, max, settings)`. Defaults to simple linear backoff using `delay` + some millisecond fuzz |
+| `onLocked`    | `Function` |         | Async function to call each time a lock is detected. Called as `(attempt, max, settings)`                                                                                           |
+| `onCreate`    | `Function` |         | Async function to call if allocating a lock is successful. Called as `(attempt, max, settings)`                                                                                     |
+| `onExhausted` | `Function` |         | Async function to call if allocating a lock failed after multiple retries. Called as `(attempt, max, settings)`. Should throw                                                       |
 
 
 cache.fromFile(key, path, expiry)
