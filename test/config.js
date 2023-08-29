@@ -16,7 +16,7 @@ export default {
 		testSerializer: false,
 	},
 	redis: {
-		enabled: false,
+		enabled: true,
 	},
 	supabase: {
 		enabled: false,

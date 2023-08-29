@@ -64,18 +64,15 @@ export default function(settings, cache) {
 	};
 
 	driver.lockAquire = (key, expiry) =>
-		driver.client.set(...[
-			key,
-			'LOCK',
-			'NX', // Only set if non-existant
-			...(expiry ? [
-				'PXAT', // Prefix that next operand expiry date (in milliseconds)
-				expiry.getTime() // Millisecond date to timeout
-			] : []),
-		])
+		driver.client.set(key, 'LOCK', {
+			'NX': true, // Only set if non-existant
+			...(expiry && {
+				'PXAT': expiry.getTime(), // Millisecond date to timeout
+			}),
+		})
 		.then(result => result === 'OK');
 
-	driver.lockRelease = key => driver.unset(key)
+	driver.lockRelease = key => driver.client.del(key)
 		.then(res => res === 1);
 
 	driver.lockExists = driver.has;
