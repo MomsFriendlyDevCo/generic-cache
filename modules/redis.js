@@ -63,8 +63,8 @@ export default function(settings, cache) {
 			.then(keys => (keys && keys.length > 0));
 	};
 
-	driver.lockAquire = (key, expiry) =>
-		driver.client.set(key, 'LOCK', {
+	driver.lockAquire = (key, val, expiry) =>
+		driver.client.set(key, (!_.isNil(val)) ? driver.settings.serialize(val) : 'LOCK', {
 			'NX': true, // Only set if non-existant
 			...(expiry && {
 				'PXAT': expiry.getTime(), // Millisecond date to timeout
