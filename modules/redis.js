@@ -15,6 +15,12 @@ export default function(settings, cache) {
 	driver.canLoad = ()=> {
 		cache.debug('canLoad', driver.settings.redis);
 		driver.client = redis.createClient(driver.settings.redis);
+
+		// TODO: Would like to make errors descriptive but a global handler does not seem to catch them
+		//driver.client.on('error', e => {
+		//	cache.debug('canLoad.error', e, typeof e);
+		//});
+
 		return driver.client.connect()
 			.then(() => true)
 			.catch(() => false);
@@ -63,14 +69,29 @@ export default function(settings, cache) {
 			.then(keys => (keys && keys.length > 0));
 	};
 
-	driver.lockAquire = (key, val, expiry) =>
-		driver.client.set(key, (!_.isNil(val)) ? driver.settings.serialize(val) : 'LOCK', {
+	driver.lockAquire = (key, val, expiry) => {
+		const options = {
 			'NX': true, // Only set if non-existant
 			...(expiry && {
-				'PXAT': expiry.getTime(), // Millisecond date to timeout
+				//'PXAT': expiry.getTime(), // Millisecond date to timeout // TODO: Starting with Redis version 6.2.0: Added the GET, EXAT and PXAT option.
+				'PX': expiry.getTime() - new Date().getTime(), // Milliseconds until timeout
 			}),
-		})
-		.then(result => result === 'OK');
+		};
+		return driver.client.set(key, (!_.isNil(val)) ? driver.settings.serialize(val) : 'LOCK', options)
+			.then(result => result === 'OK');
+	};
+
+	driver.lockHydrate = (key, val, expiry) => {
+		const options = {
+			'XX': true, // Only set if existant
+			...(expiry && {
+				//'PXAT': expiry.getTime(), // Millisecond date to timeout // TODO: Starting with Redis version 6.2.0: Added the GET, EXAT and PXAT option.
+				'PX': expiry.getTime() - new Date().getTime(), // Milliseconds until timeout
+			}),
+		};
+		return driver.client.set(key, (!_.isNil(val)) ? driver.settings.serialize(val) : 'LOCK', options)
+			.then(result => result === 'OK');
+	};
 
 	driver.lockRelease = key => driver.client.del(key)
 		.then(res => res === 1);
