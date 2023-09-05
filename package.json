@@ -1,6 +1,6 @@
 {
   "name": "@momsfriendlydevco/cache",
-  "version": "3.3.2",
+  "version": "3.3.3",
   "description": "Generic caching module (FileSystem, MemcacheD, in-memory, Mongo, Redis)",
   "directories": {
     "test": "test"
