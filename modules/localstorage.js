@@ -1,5 +1,6 @@
 import marshal from '@momsfriendlydevco/marshal';
 
+/* global window */
 let LS = window.localStorage;
 
 export default function() {
