@@ -65,8 +65,8 @@ export default function(settings, cache) {
 	};
 
 	driver.has = key => {
-		return driver.client.keys(key)
-			.then(keys => (keys && keys.length > 0));
+		return driver.client.exists(key)
+			.then(exists => !!exists)
 	};
 
 	driver.lockAquire = (key, val, expiry) => {
