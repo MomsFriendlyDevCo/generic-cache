@@ -1,11 +1,11 @@
-import _ from 'lodash';
+import {defaultsDeep} from 'lodash-es';
 import memcached from 'memcached';
 
 export default function(settings, cache) {
 	let driver = {};
 	driver.memcacheClient;
 
-	driver.settings = _.defaultsDeep(settings, {
+	driver.settings = defaultsDeep(settings, {
 		memcached: {
 			server: '127.0.0.1:11211',
 			lifetime: 1000 * 60, // Default expiry if unspecified - 1 Hour

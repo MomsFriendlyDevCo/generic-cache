@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import {has as _has, map as _map, pickBy} from 'lodash-es';
 import marshal from '@momsfriendlydevco/marshal';
 
 export default function() {
@@ -37,10 +37,10 @@ export default function() {
 
 	driver.unset = key => delete driver.store[key];
 
-	driver.has = key => _.has(driver.store, key);
+	driver.has = key => _has(driver.store, key);
 
 	driver.list = ()=>
-		_.map(driver.store, (v, k) => ({
+		_map(driver.store, (v, k) => ({
 			id: k,
 			expiry: v.expiry,
 			created: v.created,
@@ -48,7 +48,7 @@ export default function() {
 
 	driver.clean = ()=> {
 		let now = new Date();
-		driver.store = _.pickBy(driver.store, s => !s.expiry || s.expiry > now);
+		driver.store = pickBy(driver.store, s => !s.expiry || s.expiry > now);
 	};
 
 	driver.destroy = ()=> null;

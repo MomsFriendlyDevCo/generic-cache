@@ -7,7 +7,7 @@
 * TEST_MODULES=redis,memory mocha test/modules
 */
 
-import _ from 'lodash';
+import {cloneDeep, random, times} from 'lodash-es';
 import Cache from '#cache';
 import config from './config.js';
 import {expect} from 'chai';
@@ -93,7 +93,7 @@ import mlog from 'mocha-logger';
 			let sampleObject = {
 				arrays: [[1, 2, 3], [], [[[]]], [-10, 'Hello', Infinity]],
 				booleans: [true, false],
-				dates: [new Date(), new Date(Date.now() + _.random(100000, 999999)), new Date(Date.now() - _.random(100000, 999999))],
+				dates: [new Date(), new Date(Date.now() + random(100000, 999999)), new Date(Date.now() - random(100000, 999999))],
 				// Functions never compare directly in Mocha for some reason
 				//functions: [()=> false, arg => console.log(arg), (a, b, c) => a + b / c],
 				nullables: [null, undefined],
@@ -104,7 +104,7 @@ import mlog from 'mocha-logger';
 				strings: ['', 'a', 'Hello World', '😈🙓😿'],
 			};
 
-			return cache.set('testTypes', _.cloneDeep(sampleObject))
+			return cache.set('testTypes', cloneDeep(sampleObject))
 				.then(()=> cache.get('testTypes'))
 				.then(val => {
 					expect(val).to.deep.equal(sampleObject);
@@ -116,14 +116,14 @@ import mlog from 'mocha-logger';
 			let sampleObject = {
 				foo: 'Foo',
 				bar: {
-					barFoo: _.random(10000, 99999),
-					barBar: 'String-' + _.random(10000, 99999),
-					barBaz: _.random(1) ? true : false,
+					barFoo: random(10000, 99999),
+					barBar: 'String-' + random(10000, 99999),
+					barBaz: random(1) ? true : false,
 				},
 				baz: {
 					bazFoo: {
 						bazFooFoo: 'hello',
-						bazFooBar: _.times(100, ()=> _.random(10000, 99999)),
+						bazFooBar: times(100, ()=> random(10000, 99999)),
 						bazFooBaz: {
 							bazFooBazFoo: {
 								bazFooBazFooFoo: 123,

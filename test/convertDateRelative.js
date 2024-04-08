@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import {clone} from 'lodash-es';
 import Cache from '#cache';
 import {expect} from 'chai';
 import moment from 'moment';
@@ -18,7 +18,7 @@ describe('convertDateRelative()', function() {
 		let nowDateMax = moment().add(1, 's').toDate();
 
 		expect(cache.convertDateRelative(100)).to.be.within(nowDateMin, nowDateMax);
-		expect(cache.convertDateRelative(_.clone(nowDate))).to.deep.equal(nowDate);
+		expect(cache.convertDateRelative(clone(nowDate))).to.deep.equal(nowDate);
 		expect(cache.convertDateRelative(moment(nowDate).add(100, 'ms'))).to.be.within(nowDateMin, nowDateMax);
 		expect(cache.convertDateRelative('100ms')).to.be.within(nowDateMin, nowDateMax);
 	});
@@ -30,7 +30,7 @@ describe('convertDateRelative()', function() {
 		let nowDateMax = moment().add(10, 's').toDate();
 
 		expect(cache.convertDateRelative(3000)).to.be.within(nowDateMin, nowDateMax);
-		expect(cache.convertDateRelative(_.clone(nowDate))).to.deep.equal(nowDate);
+		expect(cache.convertDateRelative(clone(nowDate))).to.deep.equal(nowDate);
 		expect(cache.convertDateRelative(moment(nowDate).add(3, 's'))).to.be.within(nowDateMin, nowDateMax);
 		expect(cache.convertDateRelative('3s')).to.be.within(nowDateMin, nowDateMax);
 	});
@@ -42,7 +42,7 @@ describe('convertDateRelative()', function() {
 		let nowDateMax = moment().add(7, 'h').toDate();
 
 		expect(cache.convertDateRelative(1000 * 60 * 6)).to.be.within(nowDateMin, nowDateMax);
-		expect(cache.convertDateRelative(_.clone(nowDate))).to.deep.equal(nowDate);
+		expect(cache.convertDateRelative(clone(nowDate))).to.deep.equal(nowDate);
 		expect(cache.convertDateRelative(moment(nowDate).add(6, 'h'))).to.be.within(nowDateMin, nowDateMax);
 		expect(cache.convertDateRelative('6h')).to.be.within(nowDateMin, nowDateMax);
 	});

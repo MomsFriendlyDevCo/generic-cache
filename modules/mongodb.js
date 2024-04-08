@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import {defaultsDeep} from 'lodash-es';
 import mongoose from 'mongoose';
 
 export default function(settings, cache) {
@@ -7,7 +7,7 @@ export default function(settings, cache) {
 	driver.schema;
 	driver.model;
 
-	driver.settings = _.defaultsDeep(settings, {
+	driver.settings = defaultsDeep(settings, {
 		mongodb: {
 			uri: 'mongodb://localhost/mfdc-cache',
 			options: {

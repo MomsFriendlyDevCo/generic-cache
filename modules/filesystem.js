@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import {defaultsDeep} from 'lodash-es';
 import fs from 'node:fs';
 import fsPath from 'node:path';
 import os from 'node:os';
@@ -6,7 +6,7 @@ import os from 'node:os';
 export default function(settings, cache) {
 	let driver = {};
 
-	driver.settings = _.defaultsDeep(settings, {
+	driver.settings = defaultsDeep(settings, {
 		filesystem: {
 			fallbackDate: new Date('2500-01-01'),
 			path: key => fsPath.join(os.tmpdir(), 'cache', key + '.cache.json'),

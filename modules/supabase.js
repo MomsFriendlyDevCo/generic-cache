@@ -1,10 +1,10 @@
-import _ from 'lodash';
+import {defaultsDeep, merge} from 'lodash-es';
 import {createClient as Supabase} from '@supabase/supabase-js'
 
 export default function(settings) {
 	let driver = {};
 
-	driver.settings = _.defaultsDeep(settings, {
+	driver.settings = defaultsDeep(settings, {
 		supabase: {
 			uri: null,
 			apikey: null,
@@ -23,7 +23,7 @@ export default function(settings) {
 		driver.supabase = Supabase(
 			driver.settings.supabase.uri,
 			driver.settings.supabase.apikey,
-			_.merge(
+			merge(
 				{},
 				driver.settings.supabase.options,
 				{

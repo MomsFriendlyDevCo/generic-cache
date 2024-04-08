@@ -7,7 +7,7 @@
 * TEST_MODULES=redis,memory mocha test/modules
 */
 
-import _ from 'lodash';
+import {random} from 'lodash-es';
 import Cache from '#cache';
 import config from './config.js';
 import {expect} from 'chai';
@@ -84,7 +84,7 @@ import mlog from 'mocha-logger';
 			let stats = {clashes: 0, created: 0};
 			let created = new Set();
 			let create = ()=> new Promise((resolve, reject) => {
-				var id = 'lock-' + _.random(1, 9);
+				var id = 'lock-' + random(1, 9);
 				cache.lockAquire(id)
 					.then(res => {
 						if (res === false) { // Correct response - detected clash

@@ -1,10 +1,10 @@
-import _ from 'lodash';
+import {defaultsDeep, isNil} from 'lodash-es';
 import redis from 'redis';
 
 export default function(settings, cache) {
 	let driver = {};
 
-	driver.settings = _.defaultsDeep(settings, {
+	driver.settings = defaultsDeep(settings, {
 		redis: {
 			serialize: cache.settings.serialize,
 			deserialize: cache.settings.deserialize,
@@ -77,7 +77,7 @@ export default function(settings, cache) {
 				'PX': expiry.getTime() - new Date().getTime(), // Milliseconds until timeout
 			}),
 		};
-		return driver.client.set(key, (!_.isNil(val)) ? driver.settings.serialize(val) : 'LOCK', options)
+		return driver.client.set(key, (!isNil(val)) ? driver.settings.serialize(val) : 'LOCK', options)
 			.then(result => result === 'OK');
 	};
 
@@ -89,7 +89,7 @@ export default function(settings, cache) {
 				'PX': expiry.getTime() - new Date().getTime(), // Milliseconds until timeout
 			}),
 		};
-		return driver.client.set(key, (!_.isNil(val)) ? driver.settings.serialize(val) : 'LOCK', options)
+		return driver.client.set(key, (!isNil(val)) ? driver.settings.serialize(val) : 'LOCK', options)
 			.then(result => result === 'OK');
 	};
 
