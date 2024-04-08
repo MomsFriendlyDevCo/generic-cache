@@ -251,9 +251,32 @@ Options are:
 cache.fromFile(key, path, expiry)
 ---------------------------------
 Helper function to read a local file into the cache
+Only available within NodeJS.
 Since disk files are (kind of) immutable this function works as both a getter (fetch file contents) and a setter (populate into cache)
 The file's stats are taken into account when reading so that changed files (filesize + date) get hydrated if needed
 This function returns a promise with the cached files contents.
+
+
+cache.middleware(expiry, options)
+---------------------------------
+ExpressJS / Connect compatible middleware layer to provide caching middleware.
+Returns an ExpressJS / Connect middleware function.
+Only available within NodeJS.
+
+Expiry is optional but if provided as a string is assumed to populate `options.expiry`.
+
+Options are:
+
+| Option        | Type                                 | Default      | Description                                                                                                                                                                  |
+|---------------|--------------------------------------|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `expiry`      | `String`                             | `'5m'`       | The expiry of the cache item
+| `key`         | `String`, `Object`, `Function<String|*>` |          |Overriding name (or hashable object) to use as the caching key, if omitted the `hash` method is used to calculate the key instead. If an async function it is run as `(req)` |
+| `keyMangle`   | `Function<String>`                   |              | How to mangle the now computed key string into the key that is actually stored within the cache. Defaults to prefixing with `'middleware/'`                                  |
+| `hash`        | `Function<String|*>`                 |              | Fallback method if `options.key` is unspecified to hash the incomming request. Defaults to hashing the method, path, query and body                                          |
+| `eTag`        | `Boolean`                            | `true`       | Whether to generate + obey the eTag http spec. Clients providing a valid eTag will get a 304 response if that tag is still valid                                             |
+| `hashETag`    | `Function<String>`                   | SHA1 w/Bas64 | Async function to generate the client visible eTag from the computed key (post keyMangle)                                                                                    |
+| `context`     | `Object`                             | `Cache`      | Function context used for `key`, `hash` & `cacheFilter` functions if called. Defaults to this cache instance                                                                 |
+| `cacheFilter` | `Function`                           | `()=>true`   | Async function used to determine whether the output value should be cached when generated. Called as `(req, res, content)` and expected to eventually return a boolean       |
 
 
 cache.worker(options, worker)

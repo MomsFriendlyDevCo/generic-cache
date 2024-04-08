@@ -48,11 +48,17 @@
     "@momsfriendlydevco/marshal": "2.0.0",
     "debug": "^4.3.4",
     "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21",
+    "object-hash": "^3.0.0",
     "timestring": "^7.0.0"
   },
   "devDependencies": {
+    "axios": "^1.6.8",
+    "body-parser": "^1.20.2",
     "chai": "^4.3.7",
     "eslint": "^8.40.0",
+    "express": "^4.19.2",
+    "express-log-url": "^1.6.0",
     "mocha": "^10.2.0",
     "mocha-logger": "^1.0.8",
     "moment": "^2.29.4"
