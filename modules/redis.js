@@ -27,13 +27,17 @@ export default function(settings, cache) {
 	};
 
 	driver.set = (key, val, expiry) => {
-		return driver.client.set(...[
-			key,
-			driver.settings.serialize(val),
-			...(expiry && {
-				'PX': expiry.getTime() - new Date().getTime(), // Milliseconds until timeout
-			}),
-		]);
+		if (!expiry) {
+			return driver.client.set(key,driver.settings.serialize(val));
+		} else {
+			return driver.client.set(
+				key,
+				driver.settings.serialize(val),
+				{
+					'PX': expiry.getTime() - new Date().getTime(), // Milliseconds until timeout
+				},
+			);
+		}
 	};
 
 	driver.get = (key, fallback) => {
