@@ -30,14 +30,14 @@ export default function(settings, cache) {
 		if (!expiry) {
 			return driver.client.set(key, driver.settings.serialize(val));
 		} else {
-			return driver.client.set(...[
+			return driver.client.set(
 				key,
 				driver.settings.serialize(val),
-				...(expiry && [
-					'PXAT', // Prefix that next operand expiry date (in milliseconds)
-					expiry.getTime() // Millisecond date to timeout
-				]),
-			]);
+				{
+					// Prefix that next operand expiry date (in milliseconds)
+					'PXAT': expiry.getTime(), // Millisecond date to timeout
+				}
+			);
 		}
 	};
 
