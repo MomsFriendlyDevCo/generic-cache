@@ -28,7 +28,7 @@ export default function(settings, cache) {
 
 	driver.set = (key, val, expiry) => {
 		if (!expiry) {
-			return driver.client.set(key,driver.settings.serialize(val));
+			return driver.client.set(key, driver.settings.serialize(val));
 		} else {
 			return driver.client.set(
 				key,
