@@ -19,9 +19,9 @@ export default {
 		enabled: true,
 	},
 	supabase: {
-		enabled: false,
+		enabled: true,
 		testSerializer: false,
-		uri: null, // FIXME: Fill this in if you want to test Supabase
-		apikey:  null, // FIXME: Fill this in if you want to test Supabase
+		uri: 'https://vffelkusqbafnxvrjbwt.supabase.co',
+		apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZmVsa3VzcWJhZm54dnJqYnd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTExMjIzNDIsImV4cCI6MjAwNjY5ODM0Mn0.aOifMUcHkG1kjSe2vFLfRP_p7orw829UGKOy3H4FGrg',
 	},
 }
