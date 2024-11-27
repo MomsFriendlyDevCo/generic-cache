@@ -279,6 +279,30 @@ Options are:
 | `cacheFilter` | `Function`                           | `()=>true`   | Async function used to determine whether the output value should be cached when generated. Called as `(req, res, content)` and expected to eventually return a boolean       |
 
 
+cache.semaphore(options)
+------------------------
+ExpressJS / Connect compatible middleware layer to provide restrict incomming endpoints to use a single worker thread at a time.
+If the same endpoint is hit while the worker is still active, the subsequent hits are queued and forced to accept the first worker resolution.
+This middleware is thread-safe, using both local state + cross processor caching to manage state. It is also designed to work with `cache.middleware()` if the cached state needs to be preserved longer than the worker functioning.
+
+Returns an ExpressJS / Connect middleware function.
+Only available within NodeJS.
+
+Options are:
+
+| Option             | Type                             | Default | Description                                                                                                                                                                  |
+|--------------------|----------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `useLocal`         | `Boolean`                        | `true`  | Try to use local state promise chains first, this will capture cases only directed as a single process server                                                                |
+| `key`              | `String` / `Object` / `Function` |         | Overriding name (or hashable object) to use as the caching key, if omitted the `hash` method is used to calculate the key instead. If an async function it is run as `(req)` |
+| `keyMangleLock`    | `Function`                       |         | How to mangle the now computed key string into the lock that is actually stored within the cache                                                                             |
+| `keyMangleSession` | `Function`                       |         | How to mangle the now computed key string into the session result that is actually stored within the cache                                                                   |
+| `resultExpiry`     | `String`                         | `"5m"`  | How long to keep the resulting value before cleaning it up                                                                                                                   |
+| `hash`             | `Function`                       |         | Fallback method if `options.key` is unspecified to hash the incomming request. Defaults to hashing the method, path, query and body                                          |
+| `retries`          | `Number`                         | `2400`  | Maximum number of retries to attempt when locking, set to zero to disable, this multiplied by the delay should exceed the maximum execution time of the worker function      |
+| `delay`            | `Number`                         | `250`   | Time in milliseconds to wait for a lock using the default backoff system                                                                                                     |
+| `expiry`           | `String`                         | `'10m'` | The expiry of the lock, this should exceed the maximum execution time of the worker function                                                                                 |
+
+
 cache.worker(options, worker)
 -----------------------------
 Simple wrapper middleware function which either returns the cached ID or runs a worker to calculate + cache a new one.

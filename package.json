@@ -48,6 +48,7 @@
     "@momsfriendlydevco/marshal": "2.0.0",
     "debug": "^4.3.4",
     "lodash-es": "^4.17.21",
+    "nanoid": "^5.0.9",
     "object-hash": "^3.0.0",
     "timestring": "^7.0.0"
   },
