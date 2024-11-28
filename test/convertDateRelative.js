@@ -11,7 +11,7 @@ describe('convertDateRelative()', function() {
 		cache.init();
 	});
 
-	it('should be able to convert relative times (100ms)', ()=> {
+	it('be able to convert relative times (100ms)', ()=> {
 		let now = Date.now();
 		let nowDate = new Date(now);
 		let nowDateMin = moment().subtract(1, 's').toDate();
@@ -23,7 +23,7 @@ describe('convertDateRelative()', function() {
 		expect(cache.convertDateRelative('100ms')).to.be.within(nowDateMin, nowDateMax);
 	});
 
-	it('should be able to convert relative times (3s)', ()=> {
+	it('be able to convert relative times (3s)', ()=> {
 		let now = Date.now() + 3000;
 		let nowDate = new Date(now);
 		let nowDateMin = moment().subtract(10, 's').toDate();
@@ -35,7 +35,7 @@ describe('convertDateRelative()', function() {
 		expect(cache.convertDateRelative('3s')).to.be.within(nowDateMin, nowDateMax);
 	});
 
-	it('should be able to convert relative times (6h)', ()=> {
+	it('be able to convert relative times (6h)', ()=> {
 		let now = Date.now() + 1000 * 60 * 6;
 		let nowDate = new Date(now);
 		let nowDateMin = moment().subtract(7, 'h').toDate();

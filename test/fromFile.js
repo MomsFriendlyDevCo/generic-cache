@@ -12,7 +12,7 @@ describe('cache.fromFile', ()=> {
 	before('init cache', ()=> cache.init())
 	before('clear out test contents', ()=> cache.unset('testfile'))
 
-	it('should cache a file from disk', ()=> {
+	it('cache a file from disk', ()=> {
 
 		let reads = 0;
 		cache.on('fromFileRead', ({path}) => {

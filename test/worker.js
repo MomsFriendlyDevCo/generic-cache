@@ -9,7 +9,7 @@ describe('cache.worker', ()=> {
 	before('init cache', ()=> cache.init())
 	before('clear out test contents', ()=> cache.unset('testworker'))
 
-	it('should cache a file from disk', ()=> {
+	it('cache a file from disk', ()=> {
 
 		let reads = 0;
 		let worker = ()=> {

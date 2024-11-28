@@ -45,7 +45,7 @@ import mlog from 'mocha-logger';
 
 		after(()=> cache.destroy());
 
-		it('should handle a simple locking session', function() {
+		it('handle a simple locking session', function() {
 			if (!cache.can('lock')) return this.skip();
 			return cache.lockAquire('test-lock')
 				.then(res => expect(res).to.be.true)
@@ -58,7 +58,7 @@ import mlog from 'mocha-logger';
 		});
 
 
-		it('should handle expiring locks', function() {
+		it('handle expiring locks', function() {
 			if (!cache.can('lock')) return this.skip();
 			return cache.lockAquire('test-lock-expiry', '100ms')
 				.then(res => expect(res).to.be.true)
@@ -71,7 +71,7 @@ import mlog from 'mocha-logger';
 				.then(res => expect(res).to.be.true)
 		});
 
-		it('should handle lock conflicts', function() {
+		it('handle lock conflicts', function() {
 			if (!cache.can('lock')) return this.skip();
 			return cache.lockAquire('test-lock-conflict')
 				.then(res => expect(res).to.be.true)
@@ -79,7 +79,7 @@ import mlog from 'mocha-logger';
 				.then(res => expect(res).to.be.false)
 		});
 
-		it('should randomly create and destroy locks', function() {
+		it('randomly create and destroy locks', function() {
 			this.timeout(10 * 1000);
 			let stats = {clashes: 0, created: 0};
 			let created = new Set();
@@ -101,7 +101,7 @@ import mlog from 'mocha-logger';
 				.then(()=> mlog.log('Created', stats.created, 'locks with', stats.clashes, 'clashes'))
 		});
 
-		it('should spin-lock', async function() {
+		it('spin-lock', async function() {
 			this.timeout(10 * 1000);
 			var key = {foo: 1, bar: 2};
 

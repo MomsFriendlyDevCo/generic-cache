@@ -50,44 +50,44 @@ import mlog from 'mocha-logger';
 
 		after(()=> cache.destroy());
 
-		it('should store simple key/vals (as single setter)', ()=>
+		it('store simple key/vals (as single setter)', ()=>
 			cache.set('foo', 'Foo')
 		);
 
-		it('should query the size of simple key/vals', function() {
+		it('query the size of simple key/vals', function() {
 			if (!cache.can('size')) return this.skip();
 			return cache.size('foo')
 				.then(val => expect(val).to.be.at.least(5))
 		});
 
-		it('should store simple key/vals (as object)', ()=>
+		it('store simple key/vals (as object)', ()=>
 			cache.set({
 				bar: 'Bar',
 				baz: 'Baz',
 			})
 		);
 
-		it('should restore simple values (foo)', ()=>
+		it('restore simple values (foo)', ()=>
 			cache.get('foo')
 				.then(val => expect(val).to.be.equal('Foo'))
 		);
 
-		it('should restore simple values (bar)', ()=>
+		it('restore simple values (bar)', ()=>
 			cache.get('bar')
 				.then(val => expect(val).to.be.equal('Bar'))
 		);
 
-		it('should restore simple values (baz)', ()=>
+		it('restore simple values (baz)', ()=>
 			cache.get('baz')
 				.then(val => expect(val).to.be.equal('Baz'))
 		);
 
-		it('should restore simple values again (baz)', ()=>
+		it('restore simple values again (baz)', ()=>
 			cache.get('baz')
 				.then(val => expect(val).to.be.equal('Baz'))
 		);
 
-		it('should restore native JS primitives', function() {
+		it('restore native JS primitives', function() {
 			if (config[mod].testSerializer === false) return this.skip();
 
 			let sampleObject = {
@@ -112,7 +112,7 @@ import mlog from 'mocha-logger';
 				})
 		});
 
-		it('should restore complex nested objects', ()=> {
+		it('restore complex nested objects', ()=> {
 			let sampleObject = {
 				foo: 'Foo',
 				bar: {
@@ -144,7 +144,7 @@ import mlog from 'mocha-logger';
 				.then(()=> cache.unset('testNested'))
 		});
 
-		it('should get a list of the current cache IDs', function() {
+		it('get a list of the current cache IDs', function() {
 			if (!cache.can('list')) return this.skip();
 			return cache.list()
 				.then(res => {
@@ -157,21 +157,21 @@ import mlog from 'mocha-logger';
 				});
 		});
 
-		it('should unset a single value', ()=>
+		it('unset a single value', ()=>
 			cache.set('unFoo', true)
 				.then(()=> cache.unset('unFoo'))
 				.then(()=> cache.get('unFoo'))
 				.then(val => expect(val).to.be.undefined)
 		);
 
-		it('should unset multiple values', ()=>
+		it('unset multiple values', ()=>
 			cache.set({unFoo: 'Foo!', unBar: 'Bar!', unBaz: 'Baz!'})
 				.then(()=> cache.unset(['unFoo', 'unBar', 'unBaz']))
 				.then(()=> cache.get(['unFoo', 'unBar', 'unBaz']))
 				.then(vals => expect(vals).to.be.deep.equal({unFoo: undefined, unBar: undefined, unBaz: undefined}))
 		);
 
-		it('should expire an entry with 100ms', function() {
+		it('expire an entry with 100ms', function() {
 			if (mod == 'redis') return this.skip(); // Redis doesnt like <1s expire times as of NPM Redis@4.6.6 / Redis Server@7.0.11 - MC 2023-05-10
 
 			return cache.set('quzz', 'Quzz!', new Date(Date.now() + 100))
@@ -180,7 +180,7 @@ import mlog from 'mocha-logger';
 				.then(val => expect(val).to.be.undefined)
 		});
 
-		it('should expire an entry within 1s', ()=>
+		it('expire an entry within 1s', ()=>
 			cache.set('flarp', 'Flarp!', '1s')
 				.then(()=> new Promise(resolve => setTimeout(resolve, 1200)))
 				.then(()=> cache.get('flarp!'))
@@ -209,7 +209,7 @@ import mlog from 'mocha-logger';
 				.then(()=> cache.unset('someValue'))
 		);
 
-		it('should clean all expired items', function() {
+		it('clean all expired items', function() {
 			if (!cache.can('clean')) return this.skip();
 			return cache.clean()
 				.then(()=> cache.list())
@@ -219,12 +219,12 @@ import mlog from 'mocha-logger';
 				});
 		});
 
-		it('should clear all items', function() {
+		it('clear all items', function() {
 			if (!cache.can('clear')) return this.skip();
 			return cache.clear();
 		});
 
-		it('should handle autoCleaning', function(done) {
+		it('handle autoCleaning', function(done) {
 			if (!cache.can('clean')) return this.skip();
 			let fired = {setup: 0, start: 0, end: 0, error: 0};
 

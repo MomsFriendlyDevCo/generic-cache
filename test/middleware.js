@@ -84,7 +84,7 @@ describe('Middleware', ()=> {
 	after(finish => server.close(finish));
 	// }}}
 
-	it('should act as a simple server', function() {
+	it('act as a simple server', function() {
 		this.timeout(5 * 1000);
 
 		return axios.get(`${url}/cache/ok`)
@@ -126,7 +126,7 @@ describe('Middleware', ()=> {
 					.then(res => responses.push(res))
 			);
 
-			it('should have a valid response the first time', ()=> {
+			it('have a valid response the first time', ()=> {
 				expect(responses[0].data).to.have.property('random');
 				expect(responses[0].headers).to.have.property('etag');
 			});
@@ -136,7 +136,7 @@ describe('Middleware', ()=> {
 					.then(res => responses.push(res))
 			);
 
-			it('should have a valid response the second time', ()=> {
+			it('have a valid response the second time', ()=> {
 				expect(responses[1].data).to.have.property('random');
 				expect(responses[1].data.random).to.equal(responses[0].data.random);
 				expect(responses[1].headers).to.have.property('etag');
@@ -148,12 +148,12 @@ describe('Middleware', ()=> {
 			});
 
 
-			it('should make the third request (after cache range)', ()=>
+			it('make the third request (after cache range)', ()=>
 				axios.get(time.url)
 					.then(res => responses.push(res))
 			);
 
-			it('should have a valid response the third time', ()=> {
+			it('have a valid response the third time', ()=> {
 				expect(responses[2].data).to.have.property('random');
 				expect(responses[2].data.random).to.not.equal(responses[0].data.random);
 				expect(responses[2].headers).to.have.property('etag');
@@ -166,7 +166,7 @@ describe('Middleware', ()=> {
 	});
 	// }}}
 
-	it('should support dynamic keys', ()=> {
+	it('support dynamic keys', ()=> {
 		// Initial hit
 		let responses = [];
 		return Promise.resolve()
@@ -187,7 +187,7 @@ describe('Middleware', ()=> {
 			});
 	});
 
-	it('should cache only when the response is 200 (custom behaviour)', ()=> {
+	it('cache only when the response is 200 (custom behaviour)', ()=> {
 		// Initial hit
 		let responses = [];
 		return Promise.resolve()
@@ -215,7 +215,7 @@ describe('Middleware', ()=> {
 			})
 	});
 
-	it('should cache + restore marshaled values', ()=> Promise.resolve()
+	it('cache + restore marshaled values', ()=> Promise.resolve()
 		.then(()=> axios.get(`${url}/cache/marshal`))
 		.then(({data}) => {
 			expect(data).to.have.property('2024');

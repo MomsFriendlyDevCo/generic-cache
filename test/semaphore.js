@@ -48,10 +48,6 @@ describe('Semaphore', ()=> {
 		);
 
 		app.get('/semaphore/cache',
-			(req, res, next) => {
-				console.log('HIT /cache');
-				next();
-			},
 			cache.semaphore({useLocal: false}),
 			cache.middleware('1s'),
 			(req, res) => {
