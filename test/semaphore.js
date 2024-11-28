@@ -5,6 +5,7 @@ import {expect} from 'chai';
 import express from 'express';
 import expressLogger from 'express-log-url';
 import {random, times} from 'lodash-es';
+import {setTimeout as wait} from 'node:timers/promises';
 
 let server;
 
@@ -46,6 +47,18 @@ describe('Semaphore', ()=> {
 			},
 		);
 
+		app.get('/semaphore/cache',
+			(req, res, next) => {
+				console.log('HIT /cache');
+				next();
+			},
+			cache.semaphore({useLocal: false}),
+			cache.middleware('1s'),
+			(req, res) => {
+				setTimeout(()=> res.send({random: random(0, 99999999)}), 100);
+			},
+		);
+
 		server = app.listen(port, null, function(err) {
 			if (err) return finish(err);
 			finish();
@@ -55,12 +68,12 @@ describe('Semaphore', ()=> {
 	after(finish => server.close(finish));
 	// }}}
 
-	it('should act as a simple server', ()=>
+	it('act as a simple server', ()=>
 		axios.get(`${url}/ok`)
 			.then(({status}) => expect(status).to.equal(200))
 	);
 
-	it('should respond to a single hit', function() {
+	it('respond to a single hit', function() {
 		this.timeout(5 * 1000);
 
 		return axios.get(`${url}/semaphore`)
@@ -70,7 +83,7 @@ describe('Semaphore', ()=> {
 			});
 	});
 
-	it('should handle local state for multiple hits', function() {
+	it('handle local state for multiple hits', function() {
 		this.timeout(10 * 1000);
 
 		return Promise.all(
@@ -88,7 +101,7 @@ describe('Semaphore', ()=> {
 			})
 	});
 
-	it('should handle state for multiple hits (cache only, no local)', function() {
+	it('handle state for multiple hits (cache only, no local)', function() {
 		this.timeout(10 * 1000);
 
 		return Promise.all(
@@ -104,6 +117,33 @@ describe('Semaphore', ()=> {
 					expect(data.random).to.equal(responses[0].data.random);
 				});
 			})
+	});
+
+	it('combine semaphore + cache', function() {
+		this.timeout(60 * 1000);
+
+		// Request factory
+		let makeRequest = ()=> axios.get(`${url}/semaphore/cache`)
+			.then(({data}) => {
+				if (randomNumber === undefined) {
+					randomNumber = data.random;
+				} else {
+					expect(data.random).to.equal(randomNumber);
+				}
+			})
+
+		let randomNumber; // First random number we saw
+		return Promise.resolve()
+			.then(()=> Promise.all(
+				times(3, makeRequest), // Fire 3 requests at the semaphore
+			))
+			.then(()=> wait(500)) // Wait a whole second for original worker to complete then...
+			.then(()=> Promise.all(
+				times(3, makeRequest), // Fire a subsequent 3 requests
+			))
+			.then(()=> wait(2000)) // Wait another second for cache to expire
+			.then(()=> axios.get(`${url}/semaphore/cache`))
+			.then(({data}) => expect(data.random).to.not.equal(randomNumber))
 	});
 
 });
