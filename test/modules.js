@@ -12,6 +12,7 @@ import Cache from '#cache';
 import config from './config.js';
 import {expect} from 'chai';
 import mlog from 'mocha-logger';
+import timestring from 'timestring';
 
 ( // Determine which modules to test
 	process.env.TEST_MODULES
@@ -185,6 +186,23 @@ import mlog from 'mocha-logger';
 				.then(()=> new Promise(resolve => setTimeout(resolve, 1200)))
 				.then(()=> cache.get('flarp!'))
 				.then(val => expect(val).to.be.undefined)
+		);
+
+		it('set values with stupidly long expiries (months / years)', ()=>
+			// NOTE: We only wait a second which is kinda pointless but at least we can check its still there
+			//       At least this way we can check that the module actually ACCEPTS the value though
+			Promise.all(
+				['1m', '6m', '1y', '10y', '100y', '1000y']
+					.map(period =>
+						cache.set(`flonk-${period}`, `Flonk-${period}!`, '1y')
+							.then(()=> new Promise(resolve => setTimeout(resolve, 1000)))
+							.then(()=> cache.get(`flonk-${period}`))
+							.then(val => {
+								mlog.log(`tested expiry "${period}" (${(new Date(Date.now() + timestring(period, 'ms'))).toISOString()})`);
+								expect(val).to.equal(`Flonk-${period}!`)
+							})
+					)
+			)
 		);
 
 		it('to not return non-existant values', ()=>
