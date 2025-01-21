@@ -22,7 +22,7 @@ import mlog from 'mocha-logger';
 			'memcached',
 			'mongodb',
 			'redis',
-			'supabase',
+			// 'supabase', // Disabled here as it needs credentials
 		]
 ).filter(mod => config[mod].enabled).forEach(mod => {
 	describe(`${mod} module`, function() {
