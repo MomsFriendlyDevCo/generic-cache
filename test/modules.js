@@ -12,7 +12,6 @@ import Cache from '#cache';
 import config from './config.js';
 import {expect} from 'chai';
 import mlog from 'mocha-logger';
-import timestring from 'timestring';
 
 ( // Determine which modules to test
 	process.env.TEST_MODULES
@@ -198,7 +197,7 @@ import timestring from 'timestring';
 							.then(()=> new Promise(resolve => setTimeout(resolve, 1000)))
 							.then(()=> cache.get(`flonk-${period}`))
 							.then(val => {
-								mlog.log(`tested expiry "${period}" (${(new Date(Date.now() + timestring(period, 'ms'))).toISOString()})`);
+								mlog.log(`tested expiry "${period}" (${cache.convertDateRelative(period).toISOString()})`);
 								expect(val).to.equal(`Flonk-${period}!`)
 							})
 					)
